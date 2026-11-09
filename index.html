@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f6f3">
+<meta name="description" content="Pomodoro, cronômetro e estatísticas de estudo e questões">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Focus">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Focus</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/features.css">
+<link rel="stylesheet" href="css/themes.css">
+<script>
+  // aplica o tema salvo antes de desenhar a página (evita piscar)
+  try { const t = JSON.parse(localStorage.getItem('focolab.v1') || '{}').settings?.theme; if (t && t !== 'system') document.documentElement.dataset.theme = t; } catch (_) {}
+</script>
+</head>
+<body data-mode="pomodoro">
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Focus</div>
+    <nav class="top-actions">
+      <button class="icon-btn nav-btn" id="btnMini" title="Mini-timer sempre no topo (M)" aria-label="Mini-timer" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2.5"/><rect x="11.5" y="11" width="7" height="5" rx="1" fill="currentColor" stroke="none"/></svg>
+        <span class="nav-lbl">Mini</span>
+      </button>
+      <button class="icon-btn nav-btn" id="btnHistory" title="Histórico — editar registros (H)" aria-label="Histórico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg>
+        <span class="nav-lbl">Histórico</span>
+      </button>
+      <button class="icon-btn nav-btn" id="btnSubjects" title="Matérias, edital e metas (D)" aria-label="Matérias e edital">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/></svg>
+        <span class="nav-lbl">Matérias</span>
+      </button>
+      <button class="icon-btn nav-btn" id="btnReviews" title="Caderno de erros e revisões (C)" aria-label="Caderno de erros">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>
+        <span class="badge" id="revBadge" hidden></span>
+        <span class="nav-lbl">Erros</span>
+      </button>
+      <button class="icon-btn nav-btn" id="btnSims" title="Simulados (S)" aria-label="Simulados">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><path d="M15 5.5h2.5A1.5 1.5 0 0 1 19 7v12.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5V7a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M9 13l2 2 4-4"/></svg>
+        <span class="nav-lbl">Simulados</span>
+      </button>
+      <button class="icon-btn nav-btn" id="btnStats" title="Estatísticas (E)" aria-label="Estatísticas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V6"/><path d="M17 16V9"/></svg>
+        <span class="nav-lbl">Estatísticas</span>
+      </button>
+      <button class="icon-btn nav-btn" id="btnSettings" title="Configurações" aria-label="Configurações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></svg>
+        <span class="nav-lbl">Ajustes</span>
+      </button>
+    </nav>
+  </header>
+
+  <section class="card timer-card">
+    <button class="icon-btn sm sound-btn" id="btnSound" title="Som de fundo" aria-label="Som de fundo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="wave" d="M15.5 9a4 4 0 0 1 0 6"/><path class="wave" d="M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+    </button>
+    <div class="seg mode-tabs" id="modeTabs" role="tablist">
+      <button data-mode="pomodoro">Pomodoro</button>
+      <button data-mode="short">Pausa curta</button>
+      <button data-mode="long">Pausa longa</button>
+      <button data-mode="stopwatch">Cronômetro</button>
+    </div>
+
+    <div class="ring-wrap">
+      <svg class="ring" viewBox="0 0 240 240" aria-hidden="true">
+        <circle class="ring-track" cx="120" cy="120" r="108"/>
+        <circle class="ring-bar" id="ringBar" cx="120" cy="120" r="108"/>
+      </svg>
+      <div class="ring-center">
+        <div class="time" id="time">25:00</div>
+        <div class="mode-label" id="modeLabel">FOCO</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl" id="btnStop" title="Parar e salvar sessão (R)" aria-label="Parar">
+        <svg viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor"/></svg>
+      </button>
+      <button class="play" id="btnPlay" title="Iniciar / pausar (Espaço)" aria-label="Iniciar ou pausar"></button>
+      <button class="ctrl" id="btnSkip" title="Pular (N)" aria-label="Pular">
+        <svg viewBox="0 0 24 24"><path d="M3.5 6v12l7.5-6zM11 6v12l7.5-6z" fill="currentColor"/><rect x="18.5" y="6" width="2.2" height="12" rx="1.1" fill="currentColor"/></svg>
+      </button>
+    </div>
+
+    <div class="cycle" id="cycleDots"></div>
+    <div class="active-task" id="activeTask"></div>
+    <details class="realtime">
+      <summary>Tempo real decorrido</summary>
+      <p id="realtime"></p>
+    </details>
+  </section>
+
+  <section class="today" id="today"></section>
+  <section class="panel" id="week" hidden></section>
+  <section class="panel" id="reviewsToday" hidden></section>
+
+  <section class="tasks">
+    <div class="section-head">
+      <h2>Tarefas</h2>
+      <button class="icon-btn sm" id="btnTasksMenu" aria-label="Opções das tarefas">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="18.5" r="1.8"/></svg>
+      </button>
+    </div>
+    <ul class="task-list" id="taskList"></ul>
+    <button class="add-task" id="btnAddTask">+ Adicionar tarefa</button>
+  </section>
+
+  <footer class="foot">Focus v0.6 · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
+</div>
+
+<!-- Atalhos -->
+<dialog id="keysDlg" class="dlg">
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Atalhos do teclado</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="keys">
+      <span><kbd>Espaço</kbd></span><span>Iniciar / pausar</span>
+      <span><kbd>N</kbd></span><span>Pular</span>
+      <span><kbd>R</kbd></span><span>Parar e salvar a sessão</span>
+      <span><kbd>1</kbd> – <kbd>4</kbd></span><span>Pomodoro, pausa curta, pausa longa, cronômetro</span>
+      <span><kbd>T</kbd></span><span>Nova tarefa</span>
+      <span><kbd>Q</kbd></span><span>Registrar questões</span>
+      <span><kbd>H</kbd></span><span>Histórico</span>
+      <span><kbd>D</kbd></span><span>Matérias e edital</span>
+      <span><kbd>C</kbd></span><span>Caderno de erros</span>
+      <span><kbd>S</kbd></span><span>Simulados</span>
+      <span><kbd>E</kbd></span><span>Estatísticas</span>
+      <span><kbd>M</kbd></span><span>Mini-timer (app de desktop)</span>
+      <span><kbd>Ctrl</kbd> + <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd></span><span>Zoom (app de desktop)</span>
+    </div>
+    <h4 class="keys-h">Em qualquer programa (app de desktop)</h4>
+    <div class="keys">
+      <span><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd></span><span>Iniciar / pausar</span>
+      <span><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd></span><span>Pular</span>
+      <span><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>M</kbd></span><span>Mini-timer</span>
+      <span><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd></span><span>Abrir o Focus</span>
+    </div>
+  </div>
+</dialog>
+
+<!-- Relatório semanal -->
+<dialog id="repDlg" class="dlg">
+  <form id="repForm" class="dlg-inner">
+    <div class="dlg-head"><h3>Relatório semanal</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <p class="hint">Resumo da semana em PDF: foco por dia, matérias, metas, revisões, simulados e comparação com a semana anterior.</p>
+    <div class="fld"><span>Semana</span>
+      <div class="seg">
+        <label><input type="radio" name="week" value="this" checked><span>Esta semana</span></label>
+        <label><input type="radio" name="week" value="last"><span>Semana passada</span></label>
+      </div>
+    </div>
+    <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Gerar PDF</button></div>
+  </form>
+</dialog>
+
+<!-- Importar questões erradas -->
+<dialog id="impDlg" class="dlg mid">
+  <form id="impForm" class="dlg-inner" novalidate>
+    <div class="dlg-head"><h3>Colar questões erradas</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <label class="fld"><span>Texto das questões (copie do site ou do PDF da prova)</span>
+      <textarea name="text" rows="8" placeholder="Q1234567&#10;Ano: 2024 Banca: FGV Órgão: …&#10;Sobre os atos administrativos, assinale…&#10;A) …&#10;Gabarito: C"></textarea>
+    </label>
+    <div class="imp-head"><span class="hint" id="impCount" style="margin:0"></span><button type="button" class="link" id="impAll">marcar/desmarcar todas</button></div>
+    <div id="impList" class="imp-list"></div>
+    <div class="row2" style="margin-top:14px">
+      <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
+      <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+    </div>
+    <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="switch"><input type="checkbox" name="asDone"> Contar também como questões feitas hoje (todas erradas)</label>
+    <p class="form-err" id="impErr"></p>
+    <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary" id="impSubmit">Adicionar ao caderno</button></div>
+  </form>
+</dialog>
+
+<!-- Tarefa -->
+<dialog id="taskDlg" class="dlg">
+  <form id="taskForm" class="dlg-inner" novalidate>
+    <div class="dlg-head"><h3 id="taskDlgTitle">Nova tarefa</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <label class="fld"><span>Título</span><input name="title" maxlength="160" placeholder="Ex.: Biologia — diversidade microbiana" autocomplete="off"></label>
+    <div class="fld"><span>Tipo</span>
+      <div class="seg">
+        <label><input type="radio" name="type" value="estudo" checked><span>Estudo / leitura</span></label>
+        <label><input type="radio" name="type" value="questoes"><span>Questões</span></label>
+      </div>
+    </div>
+    <div class="row2">
+      <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
+      <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+    </div>
+    <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="fld"><span>Pomodoros estimados</span><input type="number" name="est" min="1" max="50" value="1"></label>
+    <p class="form-err" id="taskErr"></p>
+    <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+  </form>
+</dialog>
+
+<!-- Questões -->
+<dialog id="qDlg" class="dlg">
+  <form id="qForm" class="dlg-inner" novalidate>
+    <div class="dlg-head"><h3 id="qDlgTitle">Registrar questões</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <label class="fld"><span>Tarefa</span><select name="taskId"></select></label>
+    <div class="row2" id="qSubjWrap">
+      <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
+      <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+    </div>
+    <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <div class="row2">
+      <label class="fld"><span>Questões feitas</span><input type="number" name="total" min="1" max="2000" inputmode="numeric"></label>
+      <label class="fld"><span>Acertos</span><input type="number" name="correct" min="0" max="2000" inputmode="numeric"></label>
+    </div>
+    <label class="fld"><span>Data</span><input type="date" name="date"></label>
+    <div id="qReviewWrap">
+      <label class="switch"><input type="checkbox" name="review" checked> Agendar revisão dos erros (1, 7 e 30 dias)</label>
+      <label class="fld" style="margin-top:10px"><span>Anotação dos erros (opcional)</span><input name="note" maxlength="300" placeholder="Ex.: confundi ato vinculado com discricionário" autocomplete="off"></label>
+    </div>
+    <p class="hint" id="qHint"></p>
+    <p class="form-err" id="qErr"></p>
+    <div class="dlg-foot"><button type="button" class="btn" data-close>Agora não</button><button type="submit" class="btn primary" id="qSubmit">Registrar</button></div>
+  </form>
+</dialog>
+
+<!-- Sessão (tempo manual / edição) -->
+<dialog id="sessDlg" class="dlg">
+  <form id="sessForm" class="dlg-inner" novalidate>
+    <div class="dlg-head"><h3 id="sessDlgTitle">Adicionar tempo</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="row2">
+      <label class="fld"><span>Data</span><input type="date" name="date"></label>
+      <label class="fld"><span>Início</span><input type="time" name="time"></label>
+    </div>
+    <label class="fld"><span>Duração (minutos)</span><input type="number" name="minutes" min="1" max="1440" inputmode="numeric"></label>
+    <div class="row2">
+      <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
+      <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+    </div>
+    <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <div class="fld"><span>Tipo</span>
+      <div class="seg">
+        <label><input type="radio" name="type" value="estudo" checked><span>Estudo / aula</span></label>
+        <label><input type="radio" name="type" value="questoes"><span>Questões</span></label>
+      </div>
+    </div>
+    <p class="form-err" id="sessErr"></p>
+    <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+  </form>
+</dialog>
+
+<!-- Histórico -->
+<dialog id="histDlg" class="dlg mid" autofocus>
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Histórico</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="hist-nav">
+      <button class="icon-btn sm" id="histPrev" aria-label="Dia anterior">‹</button>
+      <input type="date" id="histDate">
+      <button class="icon-btn sm" id="histNext" aria-label="Próximo dia">›</button>
+      <button class="btn" id="histToday">Hoje</button>
+      <span class="grow"></span>
+      <button class="btn" id="histAddTime">+ Tempo</button>
+      <button class="btn" id="histAddQ">+ Questões</button>
+    </div>
+    <div id="histBody"></div>
+  </div>
+</dialog>
+
+<!-- Matérias, edital e metas -->
+<dialog id="subjDlg" class="dlg wide" autofocus>
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Matérias, edital e metas</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <p class="hint">Cada matéria tem seus assuntos (o edital verticalizado) e metas semanais opcionais, que alimentam o ciclo de estudos da tela inicial.</p>
+    <div id="edSummary"></div>
+    <form id="subjAddForm" class="subj-row">
+      <input name="name" placeholder="Nova matéria" maxlength="60" autocomplete="off">
+      <button class="btn" type="submit">Adicionar matéria</button>
+    </form>
+    <div id="subjCards"></div>
+  </div>
+</dialog>
+
+<!-- Caderno de erros -->
+<dialog id="revDlg" class="dlg mid" autofocus>
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Caderno de erros</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <p class="hint">Cada registro com erros vira uma revisão em 1, 7 e 30 dias. Marque "Revisei" quando refizer as questões erradas.</p>
+    <div class="rev-tools">
+      <div class="seg" id="revTab"><button data-v="due" class="on">Para revisar</button><button data-v="next">Próximas</button><button data-v="done">Concluídas</button></div>
+      <select id="revSubject"></select>
+      <button class="btn" id="revAdd">+ Anotar erro</button>
+      <button class="btn" id="revImport">Colar questões erradas</button>
+    </div>
+    <form id="revForm" class="rev-form" hidden>
+      <div class="row2">
+        <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
+        <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+      </div>
+      <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+      <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+      <div class="row2">
+        <label class="fld"><span>Questões erradas</span><input type="number" name="wrong" min="0" max="500" value="1"></label>
+        <span></span>
+      </div>
+      <label class="fld"><span>Anotação</span><input name="note" maxlength="300" placeholder="O que errou e por quê" autocomplete="off"></label>
+      <p class="form-err" id="revErr"></p>
+      <div class="dlg-foot"><button type="button" class="btn" id="revCancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+    </form>
+    <div id="revList"></div>
+  </div>
+</dialog>
+
+<!-- Simulados -->
+<dialog id="simDlg" class="dlg wide" autofocus>
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Simulados</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="rev-tools"><span class="hint" style="margin:0">As questões dos simulados também entram nas estatísticas.</span><span class="grow"></span><button class="btn primary" id="simNew">+ Novo simulado</button></div>
+    <form id="simForm" class="rev-form" hidden novalidate>
+      <div class="row2">
+        <label class="fld"><span>Nome</span><input name="name" maxlength="80" placeholder="Ex.: Simulado 3 — banca X" autocomplete="off"></label>
+        <label class="fld"><span>Data</span><input type="date" name="date"></label>
+      </div>
+      <div id="simRows"></div>
+      <p class="form-err" id="simErr"></p>
+      <div class="dlg-foot"><button type="button" class="btn" id="simCancel">Cancelar</button><button type="submit" class="btn primary">Salvar simulado</button></div>
+    </form>
+    <div id="simBody"></div>
+  </div>
+</dialog>
+
+<!-- Configurações -->
+<dialog id="settingsDlg" class="dlg mid" autofocus>
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Configurações</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+
+    <div class="set-sec">
+      <h4>Aparência</h4>
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
+
+    <div class="set-sec">
+      <h4>Timer (minutos)</h4>
+      <div class="set-grid">
+        <label class="fld"><span>Pomodoro</span><input type="number" min="1" max="180" data-set="pomodoro"></label>
+        <label class="fld"><span>Pausa curta</span><input type="number" min="1" max="60" data-set="short"></label>
+        <label class="fld"><span>Pausa longa</span><input type="number" min="1" max="90" data-set="long"></label>
+        <label class="fld"><span>Pausa longa a cada</span><input type="number" min="2" max="12" data-set="longEvery"></label>
+        <label class="fld"><span>Meta diária de foco (min)</span><input type="number" min="10" max="1440" step="10" data-set="dailyGoalMin"></label>
+      </div>
+      <div class="switches">
+        <label class="switch"><input type="checkbox" data-set="autoBreaks"> Iniciar pausas automaticamente</label>
+        <label class="switch"><input type="checkbox" data-set="autoPomos"> Iniciar pomodoro após a pausa automaticamente</label>
+        <label class="switch"><input type="checkbox" data-set="askQuestions"> Pedir registro de questões ao fim de sessões de tarefas de questões</label>
+        <label class="switch"><input type="checkbox" data-set="sound"> Som ao terminar</label>
+        <label class="switch"><input type="checkbox" data-set="notify"> Notificação do sistema</label>
+      </div>
+    </div>
+
+    <div class="set-sec">
+      <h4>Som de fundo</h4>
+      <div class="set-grid">
+        <label class="fld"><span>Som</span>
+          <select data-set="bgSound">
+            <option value="none">Nenhum</option>
+            <option value="white">Ruído branco</option>
+            <option value="pink">Chuva suave (ruído rosa)</option>
+            <option value="brown">Cachoeira (ruído marrom)</option>
+          </select>
+        </label>
+        <label class="fld"><span>Volume</span><input type="range" min="0" max="100" data-set="bgVolume"></label>
+      </div>
+      <label class="switch"><input type="checkbox" data-set="bgOnlyFocus"> Tocar só enquanto o foco estiver rodando</label>
+    </div>
+
+    <div class="set-sec">
+      <h4>Matérias e edital</h4>
+      <p class="hint">Matérias, assuntos, cores e metas semanais ficam numa tela própria.</p>
+      <button class="btn" id="btnOpenSubjects">Abrir matérias e edital</button>
+    </div>
+
+    <div class="set-sec" id="desktopSec" hidden>
+      <h4>App de desktop</h4>
+      <label class="fld" style="max-width:240px"><span>Tamanho da interface (zoom)</span>
+        <select id="zoomSel">
+          <option value="0.8">80%</option><option value="0.9">90%</option><option value="1">100%</option>
+          <option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option>
+          <option value="1.75">175%</option><option value="2">200%</option>
+        </select>
+      </label>
+      <p class="hint">Atalhos: <kbd>Ctrl</kbd>+<kbd>+</kbd> aumentar · <kbd>Ctrl</kbd>+<kbd>-</kbd> diminuir · <kbd>Ctrl</kbd>+<kbd>0</kbd> voltar a 100% · ou <kbd>Ctrl</kbd>+roda do mouse.</p>
+      <div class="switches">
+        <label class="switch"><input type="checkbox" data-set="closeToTray"> Ao fechar a janela, continuar rodando no ícone perto do relógio</label>
+      </div>
+      <p class="hint" style="margin-top:12px">Atalhos globais (funcionam com o app em segundo plano):
+        <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd> iniciar/pausar · <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd> pular ·
+        <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>M</kbd> mini-timer · <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> abrir o app</p>
+      <p class="hint" id="shortcutWarn"></p>
+      <h4 style="margin-top:18px">Sincronizar entre computadores</h4>
+      <p class="hint">Escolha uma pasta do OneDrive, Google Drive ou Dropbox. Faça o mesmo no outro computador, apontando para a <b>mesma pasta</b>: os dois passam a compartilhar tarefas, sessões, questões, revisões e simulados. O timer e as preferências deste computador não são compartilhados.</p>
+      <label class="switch"><input type="checkbox" data-set="syncOn"> Sincronizar automaticamente</label>
+      <div class="backup-row">
+        <button class="btn" id="btnSyncDir">Escolher pasta…</button>
+        <button class="btn" id="btnSyncNow">Sincronizar agora</button>
+        <span class="hint" id="syncInfo" style="margin:0"></span>
+      </div>
+      <h4 style="margin-top:18px">Backup automático</h4>
+      <label class="switch"><input type="checkbox" data-set="autoBackup"> Salvar um backup por dia numa pasta (mantém os últimos 30)</label>
+      <div class="backup-row">
+        <button class="btn" id="btnBackupDir">Escolher pasta…</button>
+        <button class="btn" id="btnBackupNow">Fazer backup agora</button>
+        <span class="hint" id="backupInfo" style="margin:0"></span>
+      </div>
+    </div>
+
+    <div class="set-sec">
+      <h4>Dados</h4>
+      <p class="hint">Tudo fica salvo neste computador. Exporte um backup de vez em quando.</p>
+      <div class="btn-row">
+        <button class="btn" id="btnExport">Exportar backup</button>
+        <button class="btn" id="btnImport">Importar backup</button>
+        <input type="file" id="fileImport" accept="application/json,.json" hidden>
+        <button class="btn" id="btnDemo">Carregar dados de exemplo</button>
+        <button class="btn danger" id="btnClear">Apagar tudo</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<!-- Estatísticas -->
+<dialog id="statsDlg" class="dlg wide" autofocus>
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Estatísticas</h3><button type="button" class="btn sm" id="btnReport">Relatório semanal (PDF)</button><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="stats-filters">
+      <div class="filt"><span>Intervalo</span>
+        <div class="seg" id="fRange"><button data-v="7">7 dias</button><button data-v="30">30 dias</button><button data-v="90">90 dias</button><button data-v="365">12 meses</button><button data-v="all">Tudo</button></div>
+      </div>
+      <div class="filt"><span>Agrupar por</span>
+        <div class="seg" id="fGroup"><button data-v="day">Dia</button><button data-v="week">Semana</button><button data-v="month">Mês</button><button data-v="year">Ano</button></div>
+      </div>
+      <div class="filt"><span>Matéria</span><select id="fSubject"></select></div>
+    </div>
+    <label class="switch"><input type="checkbox" id="fOpen" checked> Incluir tarefas em andamento</label>
+    <div id="statsBody"></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/store.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/history.js"></script>
+<script src="js/subjects.js"></script>
+<script src="js/reviews.js"></script>
+<script src="js/simulados.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/report.js"></script>
+<script src="js/import.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

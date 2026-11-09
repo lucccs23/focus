@@ -1,0 +1,43 @@
+{
+  "name": "focus",
+  "productName": "Focus",
+  "version": "0.6.0",
+  "description": "Pomodoro, cronômetro e estatísticas de estudo",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.focus.app",
+    "productName": "Focus",
+    "files": [
+      "index.html",
+      "mini.html",
+      "css/**",
+      "js/**",
+      "electron/**",
+      "build/icon.png"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Focus"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  }
+}

@@ -1,0 +1,57 @@
+/* ============================================================
+   Temas extras (além de Claro e Escuro, definidos em style.css)
+   ============================================================ */
+:root[data-theme="paper"] {
+  color-scheme: light;
+  --bg: #f4ecdf; --surface: #fbf6ee; --surface-2: #ece2d2; --line: #e2d6c3; --line-strong: #d2c3ab;
+  --text: #2b2620; --muted: #6f6457; --dim: #a0937f; --grid: #e9dfcf;
+  --shadow: 0 1px 2px rgba(60, 40, 20, .05), 0 2px 8px rgba(60, 40, 20, .05); --shadow-lg: 0 12px 40px rgba(60, 40, 20, .16); --backdrop: rgba(43, 38, 32, .3);
+  --c-focus: #b5532f; --c-short: #5f7f4f; --c-long: #4b6a86; --c-watch: #a26f1f; --on-accent: #fff;
+  --ok: #5a8445; --err: #b8473f; --rate: #3b342b;
+}
+:root[data-theme="lavender"] {
+  color-scheme: light;
+  --bg: #f5f3fa; --surface: #ffffff; --surface-2: #ece8f5; --line: #e3def0; --line-strong: #d2cbe6;
+  --text: #211d2b; --muted: #69637a; --dim: #9a94ab; --grid: #ebe7f4;
+  --shadow: 0 1px 2px rgba(40, 30, 70, .05), 0 2px 8px rgba(40, 30, 70, .05); --shadow-lg: 0 12px 40px rgba(40, 30, 70, .16); --backdrop: rgba(33, 29, 43, .3);
+  --c-focus: #7c5cc4; --c-short: #3f8f86; --c-long: #4f6fb8; --c-watch: #b0753a; --on-accent: #fff;
+  --ok: #3f8a5e; --err: #c0506a; --rate: #2e2840;
+}
+:root[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #0f1420; --surface: #161c2b; --surface-2: #1f2738; --line: #263048; --line-strong: #33405c;
+  --text: #e6eaf2; --muted: #9aa4b8; --dim: #6b7489; --grid: #212a3d;
+  --shadow: none; --shadow-lg: 0 16px 48px rgba(0, 0, 0, .55); --backdrop: rgba(0, 0, 0, .55);
+  --c-focus: #7aa2ff; --c-short: #5fd0b0; --c-long: #b392f0; --c-watch: #e5b45b; --on-accent: #0b1020;
+  --ok: #5fc98a; --err: #f07a86; --rate: #dfe5f0;
+}
+:root[data-theme="forest"] {
+  color-scheme: dark;
+  --bg: #111612; --surface: #18201a; --surface-2: #212b23; --line: #29352b; --line-strong: #36453a;
+  --text: #e6ece6; --muted: #9fae9f; --dim: #6f7d70; --grid: #222c24;
+  --shadow: none; --shadow-lg: 0 16px 48px rgba(0, 0, 0, .55); --backdrop: rgba(0, 0, 0, .55);
+  --c-focus: #8fc98a; --c-short: #5fb3a6; --c-long: #8fa9d6; --c-watch: #d9b25f; --on-accent: #0f1a10;
+  --ok: #7cc47c; --err: #e07a6c; --rate: #e0e8e0;
+}
+:root[data-theme="contrast"] {
+  color-scheme: dark;
+  --bg: #000000; --surface: #0b0b0b; --surface-2: #1a1a1a; --line: #3a3a3a; --line-strong: #5a5a5a;
+  --text: #ffffff; --muted: #d0d0d0; --dim: #a8a8a8; --grid: #2a2a2a;
+  --shadow: none; --shadow-lg: 0 0 0 1px #5a5a5a; --backdrop: rgba(0, 0, 0, .7);
+  --c-focus: #ffb020; --c-short: #3ee08a; --c-long: #5fb0ff; --c-watch: #ff7ad9; --on-accent: #000000;
+  --ok: #3ee08a; --err: #ff6b6b; --rate: #ffffff;
+}
+/* botão selecionado das abas nos temas escuros */
+:root[data-theme="night"] .seg button.on, :root[data-theme="night"] .seg input:checked + span,
+:root[data-theme="forest"] .seg button.on, :root[data-theme="forest"] .seg input:checked + span,
+:root[data-theme="contrast"] .seg button.on, :root[data-theme="contrast"] .seg input:checked + span { background: var(--line-strong); }
+:root[data-theme="contrast"] .card, :root[data-theme="contrast"] .task, :root[data-theme="contrast"] .kpi { border-color: var(--line-strong); }
+
+/* seletor de temas */
+.theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.theme-opt { display: grid; gap: 7px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-align: left; font-size: 12.5px; color: var(--text); }
+.theme-opt:hover { border-color: var(--line-strong); }
+.theme-opt.on { border-color: var(--c-focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-focus) 30%, transparent); }
+.theme-prev { display: flex; align-items: center; gap: 5px; height: 38px; padding: 0 9px; border-radius: 8px; border: 1px solid rgba(128, 128, 128, .25); }
+.theme-prev i { width: 11px; height: 11px; border-radius: 50%; }
+.theme-prev b { flex: 1; height: 6px; border-radius: 3px; opacity: .55; }
