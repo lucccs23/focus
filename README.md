@@ -14,6 +14,8 @@ Na primeira abertura, o Focus pergunta **para que você estuda** e ajusta os nom
 
 **Seus dados são só seus.** Ficam guardados no navegador do aparelho; o link é só o programa. Cada pessoa que abre o link começa com o Focus vazio.
 
+**Proteção dos dados:** o app pede ao navegador para guardar os dados de forma permanente e avisa quando faz mais de 7 dias que você não salva uma cópia (exportar backup ou sincronizar).
+
 **Usar no celular e no computador com os mesmos dados:** em Ajustes → "Sincronizar celular e computador", cada pessoa cria um código de acesso na **própria** conta do GitHub (grátis) e cola o mesmo código nos aparelhos dela. Nunca use o código de outra pessoa: os dados se misturariam.
 
 ## Desenvolvimento (esta pasta)
@@ -32,6 +34,13 @@ npm run shortcuts
 ```
 
 `npm run runtime` cria `runtime/Focus.exe`: o Electron com nome, ícone e versão do Focus (é o que aparece na barra de tarefas). `npm run shortcuts` recria os atalhos "Focus" apontando para ele. Para recompilar o `Focus.exe` (só se mexer em `build/launcher.cs`): `build\make-launcher.cmd`.
+
+**Testes:** `npm test` roda os dois testes automáticos (precisa do `npm install`):
+
+- `npm run test:web`: abre todas as telas de todos os perfis em 3 tamanhos (celular, tablet, PC) procurando erros e conteúdo fora da tela, confere os cálculos (nota líquida, notas da faculdade, flashcards, colar edital) e o modo offline;
+- `npm run test:desktop`: abre o app de desktop com dados temporários e confere timer, PDF e sincronização por pasta.
+
+**Login por e-mail (opcional):** a sincronização pode usar e-mail + código em vez do GitHub. Para ativar, siga [docs/SUPABASE.md](docs/SUPABASE.md).
 
 **Instalador:** `npm run dist` gera `dist/Focus Setup <versão>.exe` (instala como programa comum). Para outras pessoas, a versão pela internet é mais simples e se atualiza sozinha.
 

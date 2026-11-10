@@ -1,7 +1,7 @@
 {
   "name": "focus",
   "productName": "Focus",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Pomodoro, cronômetro e estatísticas de estudo",
   "main": "electron/main.js",
   "private": true,
@@ -9,7 +9,10 @@
     "start": "electron .",
     "dist": "electron-builder --win",
     "runtime": "node build/make-runtime.js",
-    "shortcuts": "electron build/make-shortcuts.js"
+    "shortcuts": "electron build/make-shortcuts.js",
+    "test": "npm run test:web && npm run test:desktop",
+    "test:web": "electron tests/web.js",
+    "test:desktop": "electron tests/desktop.js"
   },
   "build": {
     "appId": "com.focus.app",

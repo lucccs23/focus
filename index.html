@@ -114,6 +114,7 @@
     </details>
   </section>
 
+  <section class="backup-bar" id="backupBar" hidden></section>
   <section class="today" id="today"></section>
   <section class="panel" id="exams" hidden></section>
   <section class="panel" id="college" hidden></section>
@@ -133,7 +134,7 @@
 
   <section class="panel dash" id="dash" hidden></section>
 
-  <footer class="foot">Focus v1.2 · <button class="link" id="btnGuide">Guia rápido</button> · <button class="link" id="btnHome">Personalizar tela inicial</button><span class="k-only"> · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></span></footer>
+  <footer class="foot"><button class="link" id="btnAbout">Focus v1.3</button> · <button class="link" id="btnGuide">Guia rápido</button> · <button class="link" id="btnHome">Personalizar tela inicial</button><span class="k-only"> · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></span></footer>
 </div>
 
 <!-- Atalhos -->
@@ -542,6 +543,25 @@
 
     <div class="set-sec" id="cloudSec">
       <h4>Sincronizar celular e computador (pela internet)</h4>
+      <div id="emailBox" hidden>
+        <p class="hint">Entre com o mesmo e-mail em cada aparelho: os dados ficam iguais em todos.</p>
+        <div id="emailIn">
+          <div class="backup-row">
+            <input type="email" id="emailAddr" placeholder="seu@email.com" autocomplete="email" aria-label="E-mail">
+            <button class="btn primary" id="emailSend">Enviar código</button>
+          </div>
+          <div class="backup-row" id="emailCodeRow" hidden>
+            <input id="emailCode" inputmode="numeric" maxlength="8" placeholder="código de 6 dígitos" autocomplete="one-time-code" aria-label="Código recebido por e-mail">
+            <button class="btn primary" id="emailVerify">Entrar</button>
+          </div>
+        </div>
+        <div id="emailOn" hidden>
+          <p class="hint" id="emailInfo" style="margin:0 0 8px"></p>
+          <div class="backup-row" style="margin-top:0"><button class="btn" id="emailSync">Sincronizar agora</button><button class="btn" id="emailOut">Sair</button></div>
+        </div>
+      </div>
+      <details id="ghBox" open>
+      <summary id="ghSummary" hidden>Outra forma: usar uma conta do GitHub</summary>
       <p class="hint">Usa a sua conta do GitHub para guardar os dados num arquivo secreto (um "gist"). Faça isto <b>uma vez em cada aparelho</b>, com o mesmo código:</p>
       <ol class="steps">
         <li><a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Focus%20sincroniza%C3%A7%C3%A3o" target="_blank" rel="noopener">Criar o código de acesso no GitHub</a> — em "Expiration" escolha "No expiration", deixe marcado só "gist" e clique em "Generate token".</li>
@@ -554,6 +574,7 @@
         <button class="btn" id="btnCloudOff">Desconectar</button>
       </div>
       <p class="hint" id="cloudInfo" style="margin-top:8px"></p>
+      </details>
     </div>
 
     <div class="set-sec">
@@ -653,6 +674,24 @@
     <div class="note-links" id="noteLinks"></div>
     <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
   </form>
+</dialog>
+
+<!-- Novidades -->
+<dialog id="newsDlg" class="dlg">
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Novidades no Focus</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div id="newsBody"></div>
+    <div class="dlg-foot"><button type="button" class="btn primary" data-close>Legal!</button></div>
+  </div>
+</dialog>
+
+<!-- Sobre -->
+<dialog id="aboutDlg" class="dlg">
+  <div class="dlg-inner about">
+    <div class="dlg-head"><h3>Sobre o Focus</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div id="aboutBody"></div>
+    <div class="dlg-foot"><button type="button" class="btn" id="aboutShare">Indicar o Focus</button><button type="button" class="btn primary" data-close>Fechar</button></div>
+  </div>
 </dialog>
 
 <!-- Redações -->
@@ -772,6 +811,8 @@
 <script src="js/profile.js"></script>
 <script src="js/cards.js"></script>
 <script src="js/cloud.js"></script>
+<script src="js/account.js"></script>
+<script src="js/about.js"></script>
 <script src="js/custom.js"></script>
 <script src="js/dash.js"></script>
 <script src="js/app.js"></script>

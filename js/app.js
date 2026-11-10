@@ -47,9 +47,11 @@ const App = {
     Plan.init();
     Cards.init();
     Cloud.bind();
+    Account.bind();
     Dash.init();
     Settings.bind();
     Custom.init();
+    About.init();
     Profile.apply();
     Timer.init();
     this.bind();
@@ -275,6 +277,7 @@ const App = {
     Week.render();
     Reviews.renderPanel();
     Plan.render();
+    About.renderBackupBar();
     College.render();
     Dash.render();
     const cd = Cards.due().length, cb = $('#cardBadge');
@@ -655,6 +658,7 @@ const Backup = {
       if (res?.ok) {
         s.lastBackupKey = key;
         s.lastBackupAt = Date.now();
+        s.lastExportAt = Date.now();
         Store.save();
         if (force) App.toast('Backup salvo');
       } else App.toast(`Falha no backup: ${res?.error || 'erro desconhecido'}`);
@@ -691,6 +695,7 @@ const Settings = {
     $('#desktopSec').hidden = !window.desktop;
     this.fillInstall();
     Cloud.fill();
+    Account.fill();
     Profile.renderSelect();
     Profile.renderExtras();
     $('#shareUrl').textContent = appUrl();
@@ -777,6 +782,7 @@ const Settings = {
       this.fill();
       App.toast(`Perfil: ${PROFILES[e.target.value].label}`);
     };
+    $('#aboutShare').onclick = () => $('#btnShare').click();
     $('#btnShare').onclick = () => {
       const url = appUrl();
       const text = 'Focus: pomodoro, questões, revisões e estatísticas para estudar. Funciona no celular e no computador, e cada pessoa usa com os próprios dados.';
@@ -878,6 +884,7 @@ const Settings = {
   exportable() {
     const data = { ...Store.data, settings: { ...Store.data.settings }, exportedAt: new Date().toISOString() };
     delete data.settings.cloudToken;
+    delete data.settings.emailAuth;
     return data;
   },
 
@@ -887,8 +894,8 @@ const Settings = {
     if (!window.desktop && touch && typeof File === 'function') {
       const file = new File([blob], name, { type: blob.type });
       if (navigator.canShare?.({ files: [file] })) {
-        try { await navigator.share({ files: [file], title }); return; }
-        catch (e) { if (e.name === 'AbortError') return; }
+        try { await navigator.share({ files: [file], title }); return true; }
+        catch (e) { if (e.name === 'AbortError') return false; }
       }
     }
     const a = document.createElement('a');
@@ -896,6 +903,7 @@ const Settings = {
     a.download = name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    return true;
   },
 
   // planilha única (abre no Excel): uma linha por sessão, registro de questões ou área de simulado
@@ -920,7 +928,8 @@ const Settings = {
   async exportData() {
     const data = this.exportable();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    this.saveFile(blob, `focus-backup-${D.key(Date.now())}.json`, 'Backup do Focus');
+    // cancelar o compartilhamento (celular) não conta como cópia salva
+    if (await this.saveFile(blob, `focus-backup-${D.key(Date.now())}.json`, 'Backup do Focus')) About.markExported();
   },
 
   async importData(file, merge = false) {

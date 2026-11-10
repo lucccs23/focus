@@ -19,9 +19,11 @@ const Sync = {
   available() { return !!window.desktop?.syncRead; },
   // pela internet (GitHub) em qualquer aparelho; pela pasta só no app de desktop
   folderOn() { const s = Store.data.settings; return this.available() && s.syncOn && !!s.syncDir; },
-  enabled() { return Cloud.connected() || this.folderOn(); },
-  read() { return Cloud.connected() ? Cloud.read() : window.desktop.syncRead(Store.data.settings.syncDir); },
-  write(json) { return Cloud.connected() ? Cloud.write(json) : window.desktop.syncWrite(Store.data.settings.syncDir, json); },
+  enabled() { return Account.connected() || Cloud.connected() || this.folderOn(); },
+  // por onde sincronizar: conta por e-mail > GitHub > pasta (desktop)
+  via() { return Account.connected() ? Account : Cloud.connected() ? Cloud : null; },
+  read() { const v = this.via(); return v ? v.read() : window.desktop.syncRead(Store.data.settings.syncDir); },
+  write(json) { const v = this.via(); return v ? v.write(json) : window.desktop.syncWrite(Store.data.settings.syncDir, json); },
 
   init() {
     const s = Store.data.settings;
@@ -72,6 +74,7 @@ const Sync = {
       if (this.dirty() || !remote) await this.push();
       s = Store.data.settings;
       s.lastCheckAt = Date.now();
+      s.lastExportAt = Date.now(); // a nuvem tem uma cópia em dia
       s.syncError = '';
       Store.save();
       if (manual) App.toast('Sincronizado');
@@ -82,7 +85,7 @@ const Sync = {
       if (manual) App.toast(`Falha ao sincronizar: ${s.syncError}`);
     } finally {
       this._busy = false;
-      if ($('#settingsDlg').open) { Settings.fillSync(); Cloud.fill(); }
+      if ($('#settingsDlg').open) { Settings.fillSync(); Cloud.fill(); Account.fill(); }
     }
   },
 

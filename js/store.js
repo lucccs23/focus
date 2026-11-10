@@ -62,7 +62,8 @@ const DEFAULT_REVIEW_STEPS = [1, 7, 30]; // dias após o registro dos erros (edi
 const reviewSteps = () => { const v = Store.data?.settings?.reviewSteps; return Array.isArray(v) && v.length ? v : DEFAULT_REVIEW_STEPS; };
 // preferências que valem só para este computador (não são sincronizadas)
 const LOCAL_SETTINGS = ['closeToTray', 'autoBackup', 'backupDir', 'lastBackupKey', 'lastBackupAt', 'syncOn', 'syncDir', 'deviceId', 'lastSyncAt', 'lastCheckAt', 'syncSeenAt', 'syncSeenRev', 'syncError', 'wakeLock', 'cloudToken', 'cloudGistId',
-  'accent', 'clockFont', 'ringStyle', 'fontScale', 'alarmFocus', 'alarmBreak', 'alarmVol', 'navHidden', 'home', 'onboardDone', 'weekStart'];
+  'accent', 'clockFont', 'ringStyle', 'fontScale', 'alarmFocus', 'alarmBreak', 'alarmVol', 'navHidden', 'home', 'onboardDone', 'weekStart',
+  'persisted', 'lastExportAt', 'firstUseAt', 'backupSnooze', 'lastSeenVersion', 'emailAuth'];
 const DEFAULT_SETTINGS = {
   theme: 'system', wakeLock: true,
   dailyGoalQ: 0, exams: [], weeklyH: 0, weeklyQ: 0, cloudToken: '', cloudGistId: '',
