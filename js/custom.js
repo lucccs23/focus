@@ -23,7 +23,7 @@ const TIMER_PARTS = {
   counter: 'Contador rápido de questões',
   realtime: 'Tempo real decorrido',
 };
-const NAV_ITEMS = { btnHistory: 'Histórico', btnSubjects: 'Áreas', btnReviews: 'Erros', btnCards: 'Cards', btnSims: 'Simulados', btnStats: 'Estatísticas' };
+const NAV_ITEMS = { btnHistory: 'Histórico', get btnSubjects() { return T.SS || 'Matérias'; }, btnReviews: 'Erros', btnCards: 'Cards', btnSims: 'Simulados', btnStats: 'Estatísticas' };
 const DEFAULT_HOME = { order: Object.keys(HOME_PANELS), hidden: [], collapsed: [], parts: { tabs: true, dots: true, task: true, counter: true, realtime: true }, layout: 'auto' };
 
 const Custom = {
@@ -77,10 +77,13 @@ const Custom = {
 
     // assistente de início
     $('#welcomeDlg').addEventListener('click', (e) => {
+      const pf = e.target.closest('[data-wz-profile]');
+      if (pf) { Profile.set(pf.dataset.wzProfile); this.renderWelcome(); return; }
       const b = e.target.closest('[data-wz]');
       if (!b) return;
       const act = b.dataset.wz;
-      if (act === 'template') { const r = Plan.loadTemplate(); App.toast(`${r.ns} áreas e ${r.nt} temas carregados`); App.renderAll(); this.renderWelcome(); }
+      if (act === 'own') { this.doneWelcome(); Subjects.open(); setTimeout(() => $('#subjAddForm').name.focus(), 50); }
+      if (act === 'template') { const r = Plan.loadTemplate(); App.toast(`${r.ns} ${T.ss} e ${r.nt} ${T.pp} carregados`); App.renderAll(); this.renderWelcome(); }
       if (act === 'exams') { this.doneWelcome(); Subjects.open('exams'); }
       if (act === 'cycle') { this.doneWelcome(); Subjects.open(); setTimeout(() => $('#cycleForm').hours.focus(), 50); }
       if (act === 'skip') this.doneWelcome();
@@ -275,6 +278,13 @@ const Custom = {
     $('#welcomeDlg').showModal();
   },
   renderWelcome() {
+    const chosen = Profile.chosen();
+    $('#wzProfile').hidden = chosen;
+    $('#wzSteps').hidden = !chosen;
+    $('#wzProfiles').innerHTML = Object.entries(PROFILES).map(([k, p]) => `<button type="button" class="btn wz-p" data-wz-profile="${k}">${p.label}</button>`).join('');
+    const tpl = !!Profile.get().template;
+    $('#wzTemplate').hidden = !tpl;
+    $('#wzOwn').hidden = tpl;
     const has = Store.data.subjects.length > 0;
     $('#wzTemplate').classList.toggle('done', has);
     $('#wzTemplate').querySelector('button').textContent = has ? 'Carregado ✓' : 'Carregar';

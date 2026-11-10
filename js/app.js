@@ -30,6 +30,9 @@ const App = {
 
   init() {
     Store.load();
+    const d0 = Store.data;
+    Profile.migrate(d0.subjects.length > 0 || d0.sessions.length > 0 || d0.tasks.length > 0);
+    Profile.apply();
     this.applyTheme();
     Stats.init();
     History.init();
@@ -44,6 +47,7 @@ const App = {
     Dash.init();
     Settings.bind();
     Custom.init();
+    Profile.apply();
     Timer.init();
     this.bind();
     this.bindDesktop();
@@ -78,6 +82,7 @@ const App = {
     $('#btnCards').onclick = () => Cards.open();
     $('#btnSound').onclick = (e) => Sound.menu(e.currentTarget);
     $('#btnKeys').onclick = () => $('#keysDlg').showModal();
+    $('#btnGuide').onclick = () => $('#guideDlg').showModal();
     $('#btnReport').onclick = () => Report.open();
     $('#btnAddTask').onclick = () => this.openTask();
     $('#btnTasksMenu').onclick = (e) => this.tasksMenu(e.currentTarget);
@@ -121,6 +126,7 @@ const App = {
     window.desktop?.setTheme?.(THEMES[t].base);
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f7f6f3';
+    Profile.apply(); // dados trocados (backup, sincronização) podem trazer outro perfil
     if (Stats.isOpen?.()) Stats.render(); // gráficos usam as cores do tema
   },
 
@@ -373,7 +379,7 @@ const App = {
       .sort((a, b) => (a.done - b.done) || (a.createdAt - b.createdAt));
     const el = $('#taskList');
     if (!list.length) {
-      el.innerHTML = `<li class="empty">${d.tasks.some((t) => !t.archived) ? 'Todas as tarefas estão concluídas.' : 'Nenhuma tarefa ainda. Crie uma para vincular o tempo de foco e as questões a uma área.'}</li>`;
+      el.innerHTML = `<li class="empty">${d.tasks.some((t) => !t.archived) ? 'Todas as tarefas estão concluídas.' : `Nenhuma tarefa ainda. Crie uma para vincular o tempo de foco e as questões a uma ${T.s}.`}</li>`;
       return;
     }
     el.innerHTML = list.map((t) => {
@@ -472,7 +478,7 @@ const App = {
     let title = f.title.value.trim();
     // sem título: usa "Estudo de Matéria — Assunto"
     if (!title && pick.subjectId) title = `${f.type.value === 'questoes' ? 'Questões' : 'Estudo'} de ${Store.label(pick.subjectId, pick.topicId).replace(' · ', ' — ')}`;
-    if (!title) return err('Dê um título para a tarefa (ou escolha uma área).', f.title);
+    if (!title) return err(`Dê um título para a tarefa (ou escolha uma ${T.s}).`, f.title);
     const est = Math.min(50, Math.max(1, Math.round(+f.est.value || 1)));
     const type = f.type.value === 'questoes' ? 'questoes' : 'estudo';
     const d = Store.data;
@@ -674,6 +680,8 @@ const Settings = {
     $('#desktopSec').hidden = !window.desktop;
     this.fillInstall();
     Cloud.fill();
+    Profile.renderSelect();
+    $('#shareUrl').textContent = appUrl();
     Custom.renderLook();
     Custom.renderNav();
     Custom.renderPresets();
@@ -743,6 +751,18 @@ const Settings = {
     $('#btnImport').onclick = () => { this._merge = false; $('#fileImport').click(); };
     $('#btnMerge').onclick = () => { this._merge = true; $('#fileImport').click(); };
     $('#btnCsv').onclick = () => this.exportCsv();
+    $('#profileSel').onchange = (e) => {
+      if (!e.target.value) return;
+      Profile.set(e.target.value);
+      this.fill();
+      App.toast(`Perfil: ${PROFILES[e.target.value].label}`);
+    };
+    $('#btnShare').onclick = () => {
+      const url = appUrl();
+      const text = 'Focus: pomodoro, questões, revisões e estatísticas para estudar. Funciona no celular e no computador, e cada pessoa usa com os próprios dados.';
+      if (navigator.share && !window.desktop) navigator.share({ title: 'Focus', text, url }).catch(() => {});
+      else navigator.clipboard?.writeText(url).then(() => App.toast('Link copiado — é só colar e mandar')).catch(() => App.toast(url));
+    };
     $('#presetForm').onsubmit = (e) => { e.preventDefault(); Custom.addPreset(e.target); };
     $('#stepsInput').onchange = (e) => Custom.saveSteps(e.target);
     dlg.addEventListener('click', (e) => { const b = e.target.closest('[data-test-alarm]'); if (b) Custom.alarm(b.dataset.testAlarm, true); });
@@ -861,7 +881,7 @@ const Settings = {
     const d = Store.data;
     const cell = (v) => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
     const dt = (ts) => D.ddmmyy(ts).replace(/\/(\d\d)$/, (m, y) => `/20${y}`);
-    const rows = [['Tipo', 'Data', 'Hora', 'Área', 'Tema', 'Minutos de foco', 'Questões', 'Acertos', '% acerto', 'Instituição', 'Tarefa / simulado']];
+    const rows = [['Tipo', 'Data', 'Hora', `${T.S}`, `${T.P}`, 'Minutos de foco', 'Questões', 'Acertos', '% acerto', `${T.I}`, 'Tarefa / simulado']];
     d.sessions.slice().sort((a, b) => a.start - b.start).forEach((s) => rows.push([
       s.manual ? 'Tempo manual' : s.mode === 'stopwatch' ? 'Cronômetro' : 'Pomodoro', dt(s.start), Fmt.time(s.start),
       Store.subjectName(s.subjectId), s.topicId ? Store.topicName(s.topicId) : '', Math.round(s.ms / 60000), '', '', '', '', Store.task(s.taskId)?.title || '']));

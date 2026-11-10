@@ -146,7 +146,7 @@ const Stats = {
     $$('#fRange button').forEach((b) => b.classList.toggle('on', b.dataset.v === String(st.range)));
     $$('#fGroup button').forEach((b) => b.classList.toggle('on', b.dataset.v === st.group));
     const sel = $('#fSubject');
-    sel.innerHTML = '<option value="all">Todas as áreas</option><option value="none">Sem área</option>'
+    sel.innerHTML = `<option value="all">Todas as ${T.ss}</option><option value="none">Sem ${T.s}</option>`
       + Store.data.subjects.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
     if (!sel.querySelector(`option[value="${CSS.escape(st.subject)}"]`)) st.subject = 'all';
     sel.value = st.subject;
@@ -156,7 +156,7 @@ const Stats = {
     const r = this.compute();
     const gl = GROUP_LABEL[st.group];
     const rangeTxt = st.range === 'all' ? 'Todo o histórico' : st.range === 365 ? 'Últimos 12 meses' : `Últimos ${st.range} dias`;
-    const subjTxt = st.subject === 'all' ? 'todas as áreas' : st.subject === 'none' ? 'sem área' : Store.subjectName(st.subject);
+    const subjTxt = st.subject === 'all' ? `todas as ${T.ss}` : st.subject === 'none' ? `sem ${T.s}` : Store.subjectName(st.subject);
     const kpi = (l, v, s) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
     const e = r.q - r.c;
 
@@ -203,8 +203,8 @@ const Stats = {
         <span><i style="background:var(--accent)"></i>Estudo e outros</span>
       </div>
 
-      ${this.byTopic() ? `<h4 class="stats-h">Por tema — ${esc(Store.subjectName(st.subject))} <small>(<button class="link" data-k-clear>voltar para todas as áreas</button>)</small></h4>`
-        : `<h4 class="stats-h">Por área <small>(${TAP} numa linha para ver os temas dela)</small></h4>`}
+      ${this.byTopic() ? `<h4 class="stats-h">Por ${T.p} — ${esc(Store.subjectName(st.subject))} <small>(<button class="link" data-k-clear>voltar para todas as ${T.ss}</button>)</small></h4>`
+        : `<h4 class="stats-h">Por ${T.s} <small>(${TAP} numa linha para ver os ${T.pp} dela)</small></h4>`}
       <div class="tbl-wrap">${this.subjectTable(r)}</div>
       ${this.instTable(r)}`;
 
@@ -242,7 +242,7 @@ const Stats = {
         cells += `<rect class="hc l${level(v)}" x="${L + w * (C + G)}" y="${T + i * (C + G)}" width="${C}" height="${C}" rx="2.5"><title>${tip}</title></rect>`;
       }
     }
-    const days = ['Seg', '', 'Qua', '', 'Sex', '', ''].map((d, i) => d && `<text x="0" y="${T + i * (C + G) + 10}">${d}</text>`).join('');
+    const days = (String(Store.data.settings.weekStart) === '0' ? ['', 'Seg', '', 'Qua', '', 'Sex', ''] : ['Seg', '', 'Qua', '', 'Sex', '', '']).map((d, i) => d && `<text x="0" y="${T + i * (C + G) + 10}">${d}</text>`).join('');
     const W = L + 53 * (C + G), H = T + 7 * (C + G);
     return `<svg class="heat" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">${months}${days}${cells}</svg>
       <div class="heat-foot"><span>${active} dias com ${metric === 'focus' ? 'foco' : 'questões'} · ${metric === 'focus' ? Fmt.dur(total) : `${Fmt.int(total)} questões`} no ano</span>
@@ -260,8 +260,8 @@ const Stats = {
     });
     if (!m.size) return '';
     const list = [...m.entries()].sort((a, b) => b[1].q - a[1].q);
-    return `<h4 class="stats-h">Por instituição <small>(questões registradas com a instituição e simulados)</small></h4>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Instituição</th><th>Questões</th><th>Acertos</th><th>Erros</th><th>% acerto</th><th>Em simulados</th></tr></thead><tbody>
+    return `<h4 class="stats-h">Por ${T.i} <small>(questões registradas com a ${T.i} e simulados)</small></h4>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>${T.I}</th><th>Questões</th><th>Acertos</th><th>Erros</th><th>% acerto</th><th>Em simulados</th></tr></thead><tbody>
       ${list.map(([k, x]) => `<tr><td>${esc(k)}</td><td>${Fmt.int(x.q)}</td><td>${Fmt.int(x.c)}</td><td>${Fmt.int(x.q - x.c)}</td><td>${Fmt.pct(x.c / x.q)}</td><td>${x.sim ? Fmt.int(x.sim) : '<span class="muted">—</span>'}</td></tr>`).join('')}
       </tbody></table></div>`;
   },
@@ -360,7 +360,7 @@ const Stats = {
       return (va - vb) * dir;
     });
 
-    const cols = [['name', topicMode ? 'Tema' : 'Área'], ['q', 'Questões'], ['c', 'Acertos'], ['e', 'Erros'], ['pct', '% acerto'], ['delta', 'vs. anterior'], ['f', 'Tempo total'], ['pace', 'Tempo/questão']];
+    const cols = [['name', topicMode ? `${T.P}` : `${T.S}`], ['q', 'Questões'], ['c', 'Acertos'], ['e', 'Erros'], ['pct', '% acerto'], ['delta', 'vs. anterior'], ['f', 'Tempo total'], ['pace', 'Tempo/questão']];
     const dash = '<span class="muted">—</span>';
     const delta = (v) => {
       if (v == null) return dash;
@@ -369,7 +369,7 @@ const Stats = {
       return `<span class="${pp > 0 ? 'up' : 'down'}">${pp > 0 ? '+' : ''}${Fmt.dec(pp)} p.p.</span>`;
     };
     return `<table class="tbl${topicMode ? '' : ' click'}"><thead><tr>${cols.map(([k, l]) => `<th data-sort="${k}" class="${key === k ? 'sorted' : ''}">${l}${key === k ? (dir > 0 ? ' ▴' : ' ▾') : ''}</th>`).join('')}</tr></thead><tbody>
-      ${list.map((x) => `<tr ${topicMode ? '' : `data-k="${x.k}" title="Ver temas de ${esc(x.name)}"`}>
+      ${list.map((x) => `<tr ${topicMode ? '' : `data-k="${x.k}" title="Ver ${T.pp} de ${esc(x.name)}"`}>
         <td><span class="tag" style="--c:${x.color}">${esc(x.name)}</span></td>
         <td>${Fmt.int(x.q)}</td><td>${Fmt.int(x.c)}</td><td>${Fmt.int(x.e)}</td>
         <td>${x.pct == null ? dash : Fmt.pct(x.pct)}</td>

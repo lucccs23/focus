@@ -166,7 +166,7 @@ const Cards = {
   render() {
     if (!this.isOpen()) return;
     const sel = $('#cardSubject');
-    sel.innerHTML = '<option value="all">Todas as áreas</option>' + Store.data.subjects.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    sel.innerHTML = `<option value="all">Todas as ${T.ss}</option>` + Store.data.subjects.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
     sel.value = Store.subject(this.subj) ? this.subj : 'all';
     if (sel.value === 'all') this.subj = 'all';
     const dueN = this.due(true).length;
@@ -218,6 +218,6 @@ const Cards = {
         <div class="rv-note"><b>${esc(c.front)}</b></div><small>${esc(c.back.slice(0, 160))}${c.back.length > 160 ? '…' : ''}</small>
         <small>próxima revisão: ${c.due < this.endOfToday() ? '<b>hoje</b>' : D.ddmm(c.due)}${c.lapses ? ` · errou ${c.lapses}x` : ''}</small></div>
       <div class="rv-actions"><button class="kebab" data-card="edit" title="Editar" aria-label="Editar">✎</button><button class="kebab" data-card="del" title="Excluir" aria-label="Excluir">×</button></div>
-    </div>`).join('')}</div>` : '<p class="empty">Nenhum cartão nesta área.</p>';
+    </div>`).join('')}</div>` : `<p class="empty">Nenhum cartão nesta ${T.s}.</p>`;
   },
 };

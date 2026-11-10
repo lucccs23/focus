@@ -6,6 +6,8 @@ const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-5);
 const pad = (n) => String(n).padStart(2, '0');
 const DAY = 86400000;
+const APP_URL = 'https://lucccs23.github.io/focus/';
+const appUrl = () => (/^https?:$/.test(location.protocol) && !window.desktop && !/^(localhost|127\.)/.test(location.hostname) ? location.origin + location.pathname.replace(/index\.html$/, '') : APP_URL);
 // tela de toque (celular/tablet): textos dizem "toque" em vez de "clique"
 const TOUCH = !!window.matchMedia?.('(hover: none)').matches;
 const TAP = TOUCH ? 'toque' : 'clique';
@@ -43,7 +45,8 @@ const D = {
   addDays(ts, n) { const d = new Date(ts); d.setDate(d.getDate() + n); return d.getTime(); }, // seguro com horário de verão
   key(ts) { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; },
   fromKey(k) { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d).getTime(); },
-  weekStart(ts) { const d = new Date(D.sod(ts)); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); },
+  // início da semana: segunda (padrão) ou domingo (Ajustes)
+  weekStart(ts) { const d = new Date(D.sod(ts)); const sun = String(typeof Store !== 'undefined' && Store.data?.settings?.weekStart) === '0'; d.setDate(d.getDate() - (sun ? d.getDay() : (d.getDay() + 6) % 7)); return d.getTime(); },
   ddmm(ts) { const d = new Date(ts); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`; },
   ddmmyy(ts) { const d = new Date(ts); return `${D.ddmm(ts)}/${String(d.getFullYear()).slice(2)}`; },
   weekday(ts) { return WEEKDAYS[new Date(ts).getDay()]; },
@@ -56,13 +59,13 @@ const DEFAULT_REVIEW_STEPS = [1, 7, 30]; // dias após o registro dos erros (edi
 const reviewSteps = () => { const v = Store.data?.settings?.reviewSteps; return Array.isArray(v) && v.length ? v : DEFAULT_REVIEW_STEPS; };
 // preferências que valem só para este computador (não são sincronizadas)
 const LOCAL_SETTINGS = ['closeToTray', 'autoBackup', 'backupDir', 'lastBackupKey', 'lastBackupAt', 'syncOn', 'syncDir', 'deviceId', 'lastSyncAt', 'lastCheckAt', 'syncSeenAt', 'syncSeenRev', 'syncError', 'wakeLock', 'cloudToken', 'cloudGistId',
-  'accent', 'clockFont', 'ringStyle', 'fontScale', 'alarmFocus', 'alarmBreak', 'alarmVol', 'navHidden', 'home', 'onboardDone'];
+  'accent', 'clockFont', 'ringStyle', 'fontScale', 'alarmFocus', 'alarmBreak', 'alarmVol', 'navHidden', 'home', 'onboardDone', 'weekStart'];
 const DEFAULT_SETTINGS = {
   theme: 'system', wakeLock: true,
   dailyGoalQ: 0, exams: [], weeklyH: 0, weeklyQ: 0, cloudToken: '', cloudGistId: '',
   presets: [], reviewSteps: [1, 7, 30],
   accent: '', clockFont: 'thin', ringStyle: 'ring', fontScale: 1, alarmFocus: 'chime', alarmBreak: 'soft', alarmVol: 60,
-  navHidden: [], home: null, onboardDone: false,
+  navHidden: [], home: null, onboardDone: false, profile: '', weekStart: 1,
   syncOn: false, syncDir: '', deviceId: '', lastSyncAt: 0, syncSeenAt: 0,
   bgSound: 'none', bgVolume: 35, bgOnlyFocus: true,
   closeToTray: false, autoBackup: false, backupDir: '', lastBackupKey: '',
@@ -131,7 +134,7 @@ const Store = {
 
   subject(id) { return id ? this.data.subjects.find((s) => s.id === id) || null : null; },
   task(id) { return id ? this.data.tasks.find((t) => t.id === id) || null : null; },
-  subjectName(id) { return this.subject(id)?.name || 'Sem área'; },
+  subjectName(id) { return this.subject(id)?.name || `Sem ${T.s}`; },
   // só aceita cor no formato #rrggbb (o valor vai direto para o HTML)
   subjectColor(id) { const c = this.subject(id)?.color; return /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#9a968e'; },
   activeTask() { const t = this.task(this.data.activeTaskId); return t && !t.done ? t : null; },
@@ -141,7 +144,7 @@ const Store = {
     for (const s of this.data.subjects) { const t = s.topics.find((x) => x.id === id); if (t) return t; }
     return null;
   },
-  topicName(id) { return this.topic(id)?.name || 'Sem tema'; },
+  topicName(id) { return this.topic(id)?.name || `Sem ${T.p}`; },
   // "Matéria · Assunto" (assunto só se existir)
   label(subjectId, topicId) { const t = this.topic(topicId); return this.subjectName(subjectId) + (t ? ` · ${t.name}` : ''); },
 
@@ -185,12 +188,17 @@ const Store = {
   hasDemo() { return ['sessions', 'questions', 'simulados', 'cards'].some((k) => this.data[k].some((x) => x.demo)); },
 
   seedDemo() {
-    // exemplo de residência: as 5 grandes áreas com 4 temas cada
-    const INSTS = ['ENARE', 'USP-SP', 'SUS-SP', 'UNIFESP', 'UNICAMP'];
-    const subs = RES_TEMPLATE.map(([n, color, topics], k) => {
-      const s = Store.addSubject(n, { demo: true, color, weight: 1, diff: [3, 2, 2, 2, 1][k] });
+    // exemplo conforme o perfil de estudo: o modelo pronto dele (ou um genérico), 4 assuntos por matéria
+    const P = Profile.get();
+    const INSTS = P.insts().slice(0, 5);
+    if (!INSTS.length) INSTS.push('');
+    const GENERIC = [['Matéria A', '#c4623f', [['Assunto 1', 'a'], ['Assunto 2', 'm'], ['Assunto 3', 'm'], ['Assunto 4', 'b']]],
+      ['Matéria B', '#4f6d8f', [['Assunto 1', 'a'], ['Assunto 2', 'a'], ['Assunto 3', 'm'], ['Assunto 4', 'b']]],
+      ['Matéria C', '#5b8a6b', [['Assunto 1', 'm'], ['Assunto 2', 'm'], ['Assunto 3', 'b'], ['Assunto 4', 'b']]]];
+    const subs = (Profile.template() || GENERIC).slice(0, 5).map(([n, color, topics], k) => {
+      const s = Store.addSubject(n, { demo: true, color, weight: 1, diff: [3, 2, 2, 2, 1][k] ?? 2 });
       topics.slice(0, 4).forEach(([tn, inc], i) => Store.addTopic(s.id, tn, { inc, studied: i < 2, reviewed: i < 1 }));
-      if (!s.goalH) { s.goalH = [6, 5, 4, 4, 3][k]; s.goalQ = [120, 100, 80, 80, 60][k]; }
+      if (!s.goalH) { s.goalH = [6, 5, 4, 4, 3][k] ?? 3; s.goalQ = [120, 100, 80, 80, 60][k] ?? 60; }
       return s;
     });
     const today = D.sod(Date.now());
@@ -246,12 +254,12 @@ const Store = {
       });
     }
     // alguns flashcards
-    [['Tríade de Beck (tamponamento cardíaco)?', 'Hipotensão, turgência jugular e abafamento de bulhas', 0, 0],
-     ['Antídoto da intoxicação por paracetamol?', 'N-acetilcisteína', 0, 3],
-     ['Escore de Apgar: o que avalia?', 'FC, esforço respiratório, tônus, irritabilidade reflexa e cor', 2, 0],
-     ['Sulfato de magnésio na pré-eclâmpsia grave: para quê?', 'Prevenção e tratamento da eclâmpsia (convulsões)', 3, 2],
-     ['Sensibilidade de um teste?', 'Proporção de doentes com teste positivo: VP / (VP + FN)', 4, 3]]
-      .forEach(([front, back, si, ti]) => { const s = subs[si]; this.data.cards.push({ id: uid(), front, back, subjectId: s.id, topicId: s.topics[ti]?.id || null, due: Date.now(), interval: 0, ease: 2.5, reps: 0, lapses: 0, createdAt: Date.now(), demo: true }); });
+    (Profile.key() === 'residencia' ? [['Tríade de Beck (tamponamento cardíaco)?', 'Hipotensão, turgência jugular e abafamento de bulhas', 0, 0],
+      ['Antídoto da intoxicação por paracetamol?', 'N-acetilcisteína', 0, 3],
+      ['Escore de Apgar: o que avalia?', 'FC, esforço respiratório, tônus, irritabilidade reflexa e cor', 2, 0],
+      ['Sulfato de magnésio na pré-eclâmpsia grave: para quê?', 'Prevenção e tratamento da eclâmpsia (convulsões)', 3, 2],
+      ['Sensibilidade de um teste?', 'Proporção de doentes com teste positivo: VP / (VP + FN)', 4, 3]] : [[P.ex.front, P.ex.back, 0, 0]])
+      .forEach(([front, back, si, ti]) => { const s = subs[si]; if (!s) return; this.data.cards.push({ id: uid(), front, back, subjectId: s.id, topicId: s.topics[ti]?.id || null, due: Date.now(), interval: 0, ease: 2.5, reps: 0, lapses: 0, createdAt: Date.now(), demo: true }); });
     this.save();
   },
 

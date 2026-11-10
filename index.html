@@ -39,9 +39,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg>
         <span class="nav-lbl">Histórico</span>
       </button>
-      <button class="icon-btn nav-btn" id="btnSubjects" title="Áreas, temas, provas e metas (D)" aria-label="Áreas e temas">
+      <button class="icon-btn nav-btn" id="btnSubjects" title="Áreas, temas, provas e metas (D)" data-term-title="{SS}, {pp}, provas e metas (D)" aria-label="Áreas e temas" data-term-aria="{SS} e {pp}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/></svg>
-        <span class="nav-lbl">Áreas</span>
+        <span class="nav-lbl"><span data-term="{SS}">Áreas</span></span>
       </button>
       <button class="icon-btn nav-btn" id="btnReviews" title="Caderno de erros e revisões (C)" aria-label="Caderno de erros">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>
@@ -132,7 +132,7 @@
 
   <section class="panel dash" id="dash" hidden></section>
 
-  <footer class="foot">Focus v1.0 · <button class="link" id="btnHome">Personalizar tela inicial</button> · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
+  <footer class="foot">Focus v1.1 · <button class="link" id="btnGuide">Guia rápido</button> · <button class="link" id="btnHome">Personalizar tela inicial</button> · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
 </div>
 
 <!-- Atalhos -->
@@ -147,7 +147,7 @@
       <span><kbd>T</kbd></span><span>Nova tarefa</span>
       <span><kbd>Q</kbd></span><span>Registrar questões</span>
       <span><kbd>H</kbd></span><span>Histórico</span>
-      <span><kbd>D</kbd></span><span>Áreas, temas e provas</span>
+      <span><kbd>D</kbd></span><span><span data-term="{SS}, {pp} e provas">Áreas, temas e provas</span></span>
       <span><kbd>C</kbd></span><span>Caderno de erros</span>
       <span><kbd>F</kbd></span><span>Flashcards</span>
       <span><kbd>Z</kbd></span><span>Modo foco (tela cheia)</span>
@@ -170,7 +170,7 @@
 <dialog id="repDlg" class="dlg">
   <form id="repForm" class="dlg-inner">
     <div class="dlg-head"><h3>Relatório semanal</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
-    <p class="hint">Resumo da semana em PDF: foco por dia, áreas, metas, revisões, simulados e comparação com a semana anterior.</p>
+    <p class="hint"><span data-term="Resumo da semana em PDF: foco por dia, {ss}, metas, revisões, simulados e comparação com a semana anterior.">Resumo da semana em PDF: foco por dia, áreas, metas, revisões, simulados e comparação com a semana anterior.</span></p>
     <div class="fld"><span>Semana</span>
       <div class="seg">
         <label><input type="radio" name="week" value="this" checked><span>Esta semana</span></label>
@@ -191,11 +191,11 @@
     <div class="imp-head"><span class="hint" id="impCount" style="margin:0"></span><button type="button" class="link" id="impAll">marcar/desmarcar todas</button></div>
     <div id="impList" class="imp-list"></div>
     <div class="row2" style="margin-top:14px">
-      <label class="fld"><span>Área</span><select name="subjectId"></select></label>
-      <label class="fld"><span>Tema</span><select name="topicId"></select></label>
+      <label class="fld"><span><span data-term="{S}">Área</span></span><select name="subjectId"></select></label>
+      <label class="fld"><span><span data-term="{P}">Tema</span></span><select name="topicId"></select></label>
     </div>
-    <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-    <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="fld" data-new="subject" hidden><span><span data-term="Nome da nova {s}">Nome da nova área</span></span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span><span data-term="Nome do novo {p}">Nome do novo tema</span></span><input name="newTopic" maxlength="80" autocomplete="off"></label>
     <label class="switch"><input type="checkbox" name="asDone"> Contar também como questões feitas hoje (todas erradas)</label>
     <p class="form-err" id="impErr"></p>
     <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary" id="impSubmit">Adicionar ao caderno</button></div>
@@ -214,11 +214,11 @@
       </div>
     </div>
     <div class="row2">
-      <label class="fld"><span>Área</span><select name="subjectId"></select></label>
-      <label class="fld"><span>Tema</span><select name="topicId"></select></label>
+      <label class="fld"><span><span data-term="{S}">Área</span></span><select name="subjectId"></select></label>
+      <label class="fld"><span><span data-term="{P}">Tema</span></span><select name="topicId"></select></label>
     </div>
-    <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-    <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="fld" data-new="subject" hidden><span><span data-term="Nome da nova {s}">Nome da nova área</span></span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span><span data-term="Nome do novo {p}">Nome do novo tema</span></span><input name="newTopic" maxlength="80" autocomplete="off"></label>
     <label class="fld"><span>Pomodoros estimados</span><input type="number" name="est" min="1" max="50" value="1"></label>
     <p class="form-err" id="taskErr"></p>
     <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
@@ -231,18 +231,18 @@
     <div class="dlg-head"><h3 id="qDlgTitle">Registrar questões</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
     <label class="fld"><span>Tarefa</span><select name="taskId"></select></label>
     <div class="row2" id="qSubjWrap">
-      <label class="fld"><span>Área</span><select name="subjectId"></select></label>
-      <label class="fld"><span>Tema</span><select name="topicId"></select></label>
+      <label class="fld"><span><span data-term="{S}">Área</span></span><select name="subjectId"></select></label>
+      <label class="fld"><span><span data-term="{P}">Tema</span></span><select name="topicId"></select></label>
     </div>
-    <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-    <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="fld" data-new="subject" hidden><span><span data-term="Nome da nova {s}">Nome da nova área</span></span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span><span data-term="Nome do novo {p}">Nome do novo tema</span></span><input name="newTopic" maxlength="80" autocomplete="off"></label>
     <div class="row2">
       <label class="fld"><span>Questões feitas</span><input type="number" name="total" min="1" max="2000" inputmode="numeric"></label>
       <label class="fld"><span>Acertos</span><input type="number" name="correct" min="0" max="2000" inputmode="numeric"></label>
     </div>
     <div class="row2">
       <label class="fld"><span>Data</span><input type="date" name="date"></label>
-      <label class="fld"><span>Instituição (opcional)</span><input name="inst" list="instList" maxlength="40" placeholder="Ex.: ENARE" autocomplete="off"></label>
+      <label class="fld"><span><span data-term="{I} (opcional)">Instituição (opcional)</span></span><input name="inst" list="instList" maxlength="40" placeholder="Ex.: ENARE" data-term-ph="Ex.: {inst}" autocomplete="off"></label>
     </div>
     <div id="qReviewWrap">
       <label class="switch"><input type="checkbox" name="review" checked> Agendar revisão dos erros (1, 7 e 30 dias)</label>
@@ -264,11 +264,11 @@
     </div>
     <label class="fld"><span>Duração (minutos)</span><input type="number" name="minutes" min="1" max="1440" inputmode="numeric"></label>
     <div class="row2">
-      <label class="fld"><span>Área</span><select name="subjectId"></select></label>
-      <label class="fld"><span>Tema</span><select name="topicId"></select></label>
+      <label class="fld"><span><span data-term="{S}">Área</span></span><select name="subjectId"></select></label>
+      <label class="fld"><span><span data-term="{P}">Tema</span></span><select name="topicId"></select></label>
     </div>
-    <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-    <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="fld" data-new="subject" hidden><span><span data-term="Nome da nova {s}">Nome da nova área</span></span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span><span data-term="Nome do novo {p}">Nome do novo tema</span></span><input name="newTopic" maxlength="80" autocomplete="off"></label>
     <div class="fld"><span>Tipo</span>
       <div class="seg">
         <label><input type="radio" name="type" value="estudo" checked><span>Estudo / aula</span></label>
@@ -300,20 +300,20 @@
 <!-- Áreas, temas, provas e metas -->
 <dialog id="subjDlg" class="dlg wide" autofocus>
   <div class="dlg-inner">
-    <div class="dlg-head"><h3>Áreas, temas e metas</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="dlg-head"><h3><span data-term="{SS}, {pp} e metas">Áreas, temas e metas</span></h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
     <div class="subj-top">
       <section class="sbox" id="examSec">
         <h4>Provas-alvo</h4>
         <div id="examList"></div>
         <form id="examAdd" class="exam-add" novalidate>
-          <input name="name" list="instList" placeholder="Prova (ex.: ENARE)" maxlength="40" autocomplete="off" aria-label="Nome da prova">
+          <input name="name" list="instList" placeholder="Prova (ex.: ENARE)" data-term-ph="Prova (ex.: {exam})" maxlength="40" autocomplete="off" aria-label="Nome da prova">
           <input type="date" name="date" aria-label="Data da prova">
           <button class="btn" type="submit">Adicionar</button>
         </form>
       </section>
       <section class="sbox">
         <h4>Ciclo de estudos</h4>
-        <p class="hint">Quanto você consegue fazer por semana? O app divide entre as áreas pelo peso na prova e pela dificuldade, e preenche as metas.</p>
+        <p class="hint"><span data-term="Quanto você consegue fazer por semana? O app divide entre as {ss} pelo peso na prova e pela dificuldade, e preenche as metas.">Quanto você consegue fazer por semana? O app divide entre as áreas pelo peso na prova e pela dificuldade, e preenche as metas.</span></p>
         <form id="cycleForm" class="cycle-form" novalidate>
           <label class="goal"><input type="number" name="hours" min="0" max="150" step="0.5" placeholder="0" aria-label="Horas por semana"> horas</label>
           <label class="goal"><input type="number" name="qs" min="0" max="5000" placeholder="0" aria-label="Questões por semana"> questões</label>
@@ -324,10 +324,10 @@
     <div id="edSummary"></div>
     <div class="subj-add-row">
       <form id="subjAddForm" class="subj-row">
-        <input name="name" placeholder="Nova área" maxlength="60" autocomplete="off">
-        <button class="btn" type="submit">Adicionar área</button>
+        <input name="name" placeholder="Nova área" data-term-ph="Nova {s}" maxlength="60" autocomplete="off">
+        <button class="btn" type="submit"><span data-term="Adicionar {s}">Adicionar área</span></button>
       </form>
-      <button class="btn" id="btnTemplate" type="button">Carregar as 5 grandes áreas da residência</button>
+      <button class="btn" id="btnTemplate" type="button">Carregar modelo</button>
     </div>
     <div id="subjCards"></div>
   </div>
@@ -347,11 +347,11 @@
     </div>
     <form id="revForm" class="rev-form" hidden>
       <div class="row2">
-        <label class="fld"><span>Área</span><select name="subjectId"></select></label>
-        <label class="fld"><span>Tema</span><select name="topicId"></select></label>
+        <label class="fld"><span><span data-term="{S}">Área</span></span><select name="subjectId"></select></label>
+        <label class="fld"><span><span data-term="{P}">Tema</span></span><select name="topicId"></select></label>
       </div>
-      <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-      <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+      <label class="fld" data-new="subject" hidden><span><span data-term="Nome da nova {s}">Nome da nova área</span></span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+      <label class="fld" data-new="topic" hidden><span><span data-term="Nome do novo {p}">Nome do novo tema</span></span><input name="newTopic" maxlength="80" autocomplete="off"></label>
       <div class="row2">
         <label class="fld"><span>Questões erradas</span><input type="number" name="wrong" min="0" max="500" value="1"></label>
         <span></span>
@@ -375,10 +375,10 @@
         <label class="fld"><span>Data</span><input type="date" name="date"></label>
       </div>
       <div class="row2">
-        <label class="fld"><span>Instituição (opcional)</span><input name="inst" list="instList" maxlength="40" placeholder="Ex.: USP-SP" autocomplete="off"></label>
+        <label class="fld"><span><span data-term="{I} (opcional)">Instituição (opcional)</span></span><input name="inst" list="instList" maxlength="40" placeholder="Ex.: USP-SP" data-term-ph="Ex.: {sim}" autocomplete="off"></label>
         <label class="fld"><span>Nota de corte (% , opcional)</span><input type="number" name="cut" min="0" max="100" step="0.1" placeholder="Ex.: 72" inputmode="decimal"></label>
       </div>
-      <p class="hint" style="margin-top:-4px">A nota usa o peso de cada área (definido em Áreas). Sem pesos, todas valem igual.</p>
+      <p class="hint" style="margin-top:-4px"><span data-term="A nota usa o peso de cada {s} (definido em {SS}). Sem pesos, todas valem igual.">A nota usa o peso de cada área (definido em Áreas). Sem pesos, todas valem igual.</span></p>
       <div id="simRows"></div>
       <p class="form-err" id="simErr"></p>
       <div class="dlg-foot"><button type="button" class="btn" id="simCancel">Cancelar</button><button type="submit" class="btn primary">Salvar simulado</button></div>
@@ -391,6 +391,12 @@
 <dialog id="settingsDlg" class="dlg mid" autofocus>
   <div class="dlg-inner">
     <div class="dlg-head"><h3>Configurações</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+
+    <div class="set-sec">
+      <h4>Perfil de estudo</h4>
+      <label class="fld" style="max-width:320px"><span>Para que você estuda?</span><select id="profileSel"></select></label>
+      <p class="hint">Muda os nomes usados no app (área, matéria, disciplina…), o modelo pronto e as sugestões de provas e bancas. Seus dados não mudam.</p>
+    </div>
 
     <div class="set-sec">
       <h4>Aparência</h4>
@@ -415,6 +421,7 @@
         <label class="fld"><span>Pausa longa</span><input type="number" min="1" max="90" data-set="long"></label>
         <label class="fld"><span>Pausa longa a cada</span><input type="number" min="2" max="12" data-set="longEvery"></label>
         <label class="fld"><span>Meta diária de foco (min)</span><input type="number" min="10" max="1440" step="10" data-set="dailyGoalMin"></label>
+        <label class="fld"><span>A semana começa</span><select data-set="weekStart"><option value="1">Na segunda</option><option value="0">No domingo</option></select></label>
         <label class="fld"><span>Meta diária de questões (0 = sem)</span><input type="number" min="0" max="2000" step="5" data-set="dailyGoalQ"></label>
       </div>
       <div class="switches">
@@ -472,9 +479,9 @@
     </div>
 
     <div class="set-sec">
-      <h4>Áreas, temas e provas</h4>
-      <p class="hint">Áreas, temas, incidência, provas-alvo e metas semanais ficam numa tela própria.</p>
-      <button class="btn" id="btnOpenSubjects">Abrir áreas e temas</button>
+      <h4><span data-term="{SS}, {pp} e provas">Áreas, temas e provas</span></h4>
+      <p class="hint"><span data-term="{SS}, {pp}, incidência, provas-alvo e metas semanais ficam numa tela própria.">Áreas, temas, incidência, provas-alvo e metas semanais ficam numa tela própria.</span></p>
+      <button class="btn" id="btnOpenSubjects"><span data-term="Abrir {ss} e {pp}">Abrir áreas e temas</span></button>
     </div>
 
     <div class="set-sec" id="desktopSec" hidden>
@@ -527,6 +534,12 @@
       <p class="hint" id="cloudInfo" style="margin-top:8px"></p>
     </div>
 
+    <div class="set-sec">
+      <h4>Indicar o Focus</h4>
+      <p class="hint">Qualquer pessoa pode usar pelo mesmo link. Cada uma tem os próprios dados, no próprio aparelho — ninguém vê os dados de ninguém.</p>
+      <div class="backup-row"><button class="btn" id="btnShare">Compartilhar o link</button><span class="hint" id="shareUrl" style="margin:0"></span></div>
+    </div>
+
     <div class="set-sec" id="installSec" hidden>
       <h4>Instalar no aparelho</h4>
       <p class="hint" id="installHint"></p>
@@ -560,7 +573,7 @@
       <div class="filt"><span>Agrupar por</span>
         <div class="seg" id="fGroup"><button data-v="day">Dia</button><button data-v="week">Semana</button><button data-v="month">Mês</button><button data-v="year">Ano</button></div>
       </div>
-      <div class="filt"><span>Área</span><select id="fSubject"></select></div>
+      <div class="filt"><span><span data-term="{S}">Área</span></span><select id="fSubject"></select></div>
     </div>
     <label class="switch"><input type="checkbox" id="fOpen" checked> Incluir tarefas em andamento</label>
     <div id="statsBody"></div>
@@ -573,19 +586,19 @@
     <div class="dlg-head"><h3>Flashcards</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
     <div class="rev-tools">
       <div class="seg" id="cardTab"><button data-v="study" class="on">Estudar</button><button data-v="list">Cartões</button><button data-v="import">Importar</button></div>
-      <select id="cardSubject" aria-label="Filtrar por área"></select>
+      <select id="cardSubject" aria-label="Filtrar por área" data-term-aria="Filtrar por {s}"></select>
     </div>
     <div id="cardStudy"></div>
     <div id="cardListWrap" hidden>
       <form id="cardForm" class="rev-form" novalidate>
         <div class="row2">
-          <label class="fld"><span>Área</span><select name="subjectId"></select></label>
-          <label class="fld"><span>Tema</span><select name="topicId"></select></label>
+          <label class="fld"><span><span data-term="{S}">Área</span></span><select name="subjectId"></select></label>
+          <label class="fld"><span><span data-term="{P}">Tema</span></span><select name="topicId"></select></label>
         </div>
-        <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-        <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
-        <label class="fld"><span>Frente (pergunta)</span><textarea name="front" rows="2" maxlength="1000" placeholder="Ex.: Tríade de Beck no tamponamento cardíaco?"></textarea></label>
-        <label class="fld"><span>Verso (resposta)</span><textarea name="back" rows="3" maxlength="2000" placeholder="Hipotensão, turgência jugular e abafamento de bulhas"></textarea></label>
+        <label class="fld" data-new="subject" hidden><span><span data-term="Nome da nova {s}">Nome da nova área</span></span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+        <label class="fld" data-new="topic" hidden><span><span data-term="Nome do novo {p}">Nome do novo tema</span></span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+        <label class="fld"><span>Frente (pergunta)</span><textarea name="front" rows="2" maxlength="1000" placeholder="Ex.: Tríade de Beck no tamponamento cardíaco?" data-term-ph="Ex.: {front}"></textarea></label>
+        <label class="fld"><span>Verso (resposta)</span><textarea name="back" rows="3" maxlength="2000" placeholder="Hipotensão, turgência jugular e abafamento de bulhas" data-term-ph="{back}"></textarea></label>
         <p class="form-err" id="cardErr"></p>
         <div class="dlg-foot"><button type="button" class="btn" id="cardCancel" hidden>Cancelar edição</button><button type="submit" class="btn primary" id="cardSubmit">Adicionar cartão</button></div>
       </form>
@@ -596,11 +609,11 @@
         <p class="hint">Um cartão por linha, com a frente e o verso separados por <b>tabulação</b> (formato de exportação do Anki), <b>;</b> ou <b>::</b>. Ex.: <code>Antídoto do paracetamol :: N-acetilcisteína</code></p>
         <label class="fld"><span>Cartões</span><textarea name="text" rows="8" placeholder="Frente :: Verso"></textarea></label>
         <div class="row2">
-          <label class="fld"><span>Área</span><select name="subjectId"></select></label>
-          <label class="fld"><span>Tema</span><select name="topicId"></select></label>
+          <label class="fld"><span><span data-term="{S}">Área</span></span><select name="subjectId"></select></label>
+          <label class="fld"><span><span data-term="{P}">Tema</span></span><select name="topicId"></select></label>
         </div>
-        <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-        <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+        <label class="fld" data-new="subject" hidden><span><span data-term="Nome da nova {s}">Nome da nova área</span></span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+        <label class="fld" data-new="topic" hidden><span><span data-term="Nome do novo {p}">Nome do novo tema</span></span><input name="newTopic" maxlength="80" autocomplete="off"></label>
         <p class="hint" id="cardImpCount"></p>
         <p class="form-err" id="cardImpErr"></p>
         <div class="dlg-foot"><button type="submit" class="btn primary">Importar cartões</button></div>
@@ -642,14 +655,41 @@
 <dialog id="welcomeDlg" class="dlg">
   <div class="dlg-inner">
     <div class="dlg-head"><h3>Bem-vindo ao Focus</h3><button type="button" class="x" data-wz="skip" aria-label="Fechar">×</button></div>
-    <p class="hint">Três passos rápidos para deixar tudo pronto para a residência:</p>
-    <div class="wz">
-      <div class="wz-step" id="wzTemplate"><b>1</b><div><strong>Áreas e temas</strong><small>As 5 grandes áreas com os temas e a incidência de cada um.</small></div><button class="btn primary sm" data-wz="template">Carregar</button></div>
-      <div class="wz-step"><b>2</b><div><strong>Provas-alvo</strong><small>ENARE, USP, SUS-SP… com a data, para ver o ritmo necessário.</small></div><button class="btn sm" data-wz="exams">Cadastrar</button></div>
-      <div class="wz-step"><b>3</b><div><strong>Ciclo de estudos</strong><small>Horas e questões por semana; o app divide entre as áreas.</small></div><button class="btn sm" data-wz="cycle">Definir</button></div>
+    <div id="wzProfile">
+      <p class="hint">Para que você estuda? Isso ajusta os nomes, o modelo pronto e as sugestões de provas. Dá para mudar depois em Ajustes.</p>
+      <div class="wz-prof" id="wzProfiles"></div>
     </div>
-    <p class="hint" style="margin-top:12px">Já usa o Focus em outro aparelho? Conecte a sincronização em Ajustes.</p>
+    <div id="wzSteps" hidden>
+      <p class="hint">Três passos rápidos para deixar tudo pronto para <b data-term="{short}">os seus estudos</b>:</p>
+      <div class="wz">
+        <div class="wz-step" id="wzTemplate"><b>1</b><div><strong data-term="{SS} e {pp}">Matérias e assuntos</strong><small data-term="{SS} prontas, com os {pp} e a incidência de cada um.">Modelo pronto.</small></div><button class="btn primary sm" data-wz="template">Carregar</button></div>
+        <div class="wz-step" id="wzOwn"><b>1</b><div><strong data-term="{SS} e {pp}">Matérias e assuntos</strong><small data-term="Cadastre as suas {ss} e cole a lista de {pp} de cada uma.">Cadastre as suas matérias.</small></div><button class="btn primary sm" data-wz="own">Cadastrar</button></div>
+        <div class="wz-step"><b>2</b><div><strong>Provas-alvo</strong><small data-term="{exams} com a data, para ver o ritmo necessário.">Com a data, para ver o ritmo necessário.</small></div><button class="btn sm" data-wz="exams">Cadastrar</button></div>
+        <div class="wz-step"><b>3</b><div><strong>Ciclo de estudos</strong><small data-term="Horas e questões por semana; o app divide entre as {ss}.">Horas e questões por semana.</small></div><button class="btn sm" data-wz="cycle">Definir</button></div>
+      </div>
+      <p class="hint" style="margin-top:12px">Já usa o Focus em outro aparelho? Conecte a sincronização em Ajustes.</p>
+    </div>
     <div class="dlg-foot"><button type="button" class="btn" data-wz="skip">Agora não</button></div>
+  </div>
+</dialog>
+
+<!-- Guia rápido -->
+<dialog id="guideDlg" class="dlg mid">
+  <div class="dlg-inner guide">
+    <div class="dlg-head"><h3>Guia rápido</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <h4>1. Comece pelas <span data-term="{ss}">matérias</span></h4>
+    <p>Em <b data-term="{SS}">Matérias</b>, cadastre o que você estuda (ou carregue o modelo pronto, quando houver) e cole a lista de <span data-term="{pp}">assuntos</span>. Dê um peso a cada uma e informe quantas horas e questões consegue fazer por semana: o app divide as metas.</p>
+    <h4>2. Estude com o timer</h4>
+    <p>Crie uma tarefa (estudo ou questões), deixe-a ativa e aperte o play. O tempo vai para a tarefa, a <span data-term="{s}">matéria</span> e o <span data-term="{p}">assunto</span>. Em tarefas de questões, use <b>✓ Acertei / ✗ Errei</b> no próprio timer. O botão ⛶ (ou a tecla Z) deixa só o timer na tela.</p>
+    <h4>3. Registre questões e revise os erros</h4>
+    <p>Todo registro com erros vira revisão no <b>Caderno de erros</b> (1, 7 e 30 dias, ou o que você definir). Use também os <b>Flashcards</b> para o que você esquece. O que vence no dia aparece na tela inicial.</p>
+    <h4>4. Acompanhe</h4>
+    <p>Cadastre as provas-alvo para ver os dias que faltam e o ritmo necessário. "Atacar primeiro" mostra os <span data-term="{pp}">assuntos</span> mais cobrados em que você vai mal. Veja tudo em Estatísticas e gere o relatório semanal em PDF.</p>
+    <h4>5. Seus dados</h4>
+    <p>Tudo fica salvo <b>só neste aparelho</b>. Para usar em mais de um (celular e computador), conecte a sincronização em Ajustes, com a sua própria conta do GitHub. Exporte um backup de vez em quando.</p>
+    <h4>6. Do seu jeito</h4>
+    <p>Em Ajustes: perfil de estudo, tema e cor, timers personalizados, alarmes, intervalos de revisão e a barra de botões. No rodapé, "Personalizar tela inicial" escolhe o que aparece e em que ordem.</p>
+    <div class="dlg-foot"><button type="button" class="btn primary" data-close>Entendi</button></div>
   </div>
 </dialog>
 
@@ -671,6 +711,7 @@
 <script src="js/report.js"></script>
 <script src="js/import.js"></script>
 <script src="js/residency.js"></script>
+<script src="js/profile.js"></script>
 <script src="js/cards.js"></script>
 <script src="js/cloud.js"></script>
 <script src="js/custom.js"></script>

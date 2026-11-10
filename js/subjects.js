@@ -19,9 +19,9 @@ const Pick = {
 
   fill(form, subjectId, topicId) {
     const subs = Store.data.subjects;
-    form.subjectId.innerHTML = '<option value="">Sem área</option>'
+    form.subjectId.innerHTML = `<option value="">Sem ${T.s}</option>`
       + subs.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')
-      + '<option value="__new">+ Nova área…</option>';
+      + `<option value="__new">+ Nova ${T.s}…</option>`;
     form.subjectId.value = subs.some((s) => s.id === subjectId) ? subjectId : '';
     form.newSubject.value = '';
     form.newTopic.value = '';
@@ -33,9 +33,9 @@ const Pick = {
     const sid = form.subjectId.value;
     const s = Store.subject(sid);
     const topics = s ? s.topics : [];
-    form.topicId.innerHTML = '<option value="">Sem tema</option>'
+    form.topicId.innerHTML = `<option value="">Sem ${T.p}</option>`
       + topics.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('')
-      + (sid ? '<option value="__new">+ Novo tema…</option>' : '');
+      + (sid ? `<option value="__new">+ Novo ${T.p}…</option>` : '');
     form.topicId.value = topics.some((t) => t.id === topicId) ? topicId : '';
     form.topicId.disabled = !sid;
   },
@@ -51,12 +51,12 @@ const Pick = {
     let topicId = form.topicId.value || null;
     if (subjectId === '__new') {
       const s = Store.addSubject(form.newSubject.value);
-      if (!s) return { error: 'Digite o nome da nova área.', el: form.newSubject };
+      if (!s) return { error: `Digite o nome da nova ${T.s}.`, el: form.newSubject };
       subjectId = s.id;
     }
     if (topicId === '__new') {
       const t = Store.addTopic(subjectId, form.newTopic.value);
-      if (!t) return { error: 'Digite o nome do novo tema.', el: form.newTopic };
+      if (!t) return { error: `Digite o nome do novo ${T.p}.`, el: form.newTopic };
       topicId = t.id;
     }
     return { subjectId, topicId };
@@ -79,7 +79,7 @@ const Subjects = {
     };
     $('#btnTemplate').onclick = () => {
       const { ns, nt } = Plan.loadTemplate();
-      App.toast(ns || nt ? `Modelo carregado: ${ns} área(s) e ${nt} tema(s) novos` : 'O modelo já estava carregado');
+      App.toast(ns || nt ? `Modelo carregado: ${ns} ${T.s}(s) e ${nt} ${T.p}(s) novos` : 'O modelo já estava carregado');
       this.changed();
     };
     // provas-alvo
@@ -105,7 +105,7 @@ const Subjects = {
       const f = e.target, s = Store.data.settings;
       const h = Math.max(0, Math.min(150, +f.hours.value || 0)), q = Math.max(0, Math.min(5000, Math.round(+f.qs.value || 0)));
       if (!h && !q) { App.toast('Informe as horas e/ou questões por semana'); return; }
-      if (!Store.data.subjects.length) { App.toast('Cadastre as áreas primeiro'); return; }
+      if (!Store.data.subjects.length) { App.toast(`Cadastre as ${T.ss} primeiro`); return; }
       s.weeklyH = h; s.weeklyQ = q;
       Plan.distribute(h, q);
       App.toast('Metas semanais distribuídas pelo peso e pela dificuldade');
@@ -198,7 +198,7 @@ const Subjects = {
     const note = e.target.closest('[data-note]');
     if (note) return this.openNote(note.closest('tr').dataset.tid);
     if (e.target.closest('[data-del-subj]')) {
-      if (!confirm(`Excluir a área "${s.name}"?\nTarefas e registros dela passam para "Sem área".`)) return;
+      if (!confirm(`Excluir a ${T.s} "${s.name}"?\nTarefas e registros dela passam para "Sem ${T.s}".`)) return;
       const all = [...d.tasks, ...d.sessions, ...d.questions, ...d.reviews, ...d.cards];
       all.forEach((x) => { if (x.subjectId === s.id) { x.subjectId = null; x.topicId = null; } });
       d.simulados.forEach((sim) => sim.rows.forEach((r) => { if (r.subjectId === s.id) r.subjectId = null; }));
@@ -209,7 +209,7 @@ const Subjects = {
     if (del) {
       const tid = del.closest('tr').dataset.tid;
       const t = s.topics.find((x) => x.id === tid);
-      if (!t || !confirm(`Excluir o tema "${t.name}"?\nOs registros dele continuam na área, como "Sem tema".`)) return;
+      if (!t || !confirm(`Excluir o ${T.p} "${t.name}"?\nOs registros dele continuam na ${T.s}, como "Sem ${T.p}".`)) return;
       [...d.tasks, ...d.sessions, ...d.questions, ...d.reviews, ...d.cards].forEach((x) => { if (x.topicId === tid) x.topicId = null; });
       s.topics = s.topics.filter((x) => x.id !== tid);
       this.changed();
@@ -236,10 +236,12 @@ const Subjects = {
     const qBy = Plan.topicStats();
     const allT = subs.flatMap((s) => s.topics);
     const st = allT.filter((t) => t.studied).length, rv = allT.filter((t) => t.reviewed).length;
-    $('#btnTemplate').textContent = subs.length ? 'Completar com o modelo das 5 grandes áreas' : 'Carregar as 5 grandes áreas da residência';
+    const tl = Profile.get().templateLabel;
+    $('#btnTemplate').hidden = !tl;
+    if (tl) $('#btnTemplate').textContent = subs.length ? `Completar com ${tl}` : `Carregar ${tl}`;
     $('#edSummary').innerHTML = allT.length ? `
       <div class="ed-sum">
-        <div><b>${Math.round((st / allT.length) * 100)}%</b> dos temas estudados <span class="muted">· ${st} de ${allT.length} temas · ${rv} revisados</span></div>
+        <div><b>${Math.round((st / allT.length) * 100)}%</b> dos ${T.pp} estudados <span class="muted">· ${st} de ${allT.length} ${T.pp} · ${rv} revisados</span></div>
         <div class="bar"><i style="width:${((st / allT.length) * 100).toFixed(1)}%"></i></div>
       </div>` : '';
 
@@ -251,8 +253,8 @@ const Subjects = {
       return `<div class="scard" data-id="${s.id}">
         <div class="scard-head">
           <input type="color" value="${Store.subjectColor(s.id)}" data-f="color" aria-label="Cor">
-          <input class="sname" value="${esc(s.name)}" data-f="name" maxlength="60" aria-label="Nome da área">
-          <button class="kebab" data-del-subj title="Excluir área" aria-label="Excluir área">×</button>
+          <input class="sname" value="${esc(s.name)}" data-f="name" maxlength="60" aria-label="Nome da ${T.s}">
+          <button class="kebab" data-del-subj title="Excluir ${T.s}" aria-label="Excluir ${T.s}">×</button>
         </div>
         <div class="scard-goals">
           <label class="goal">Peso na prova <select data-f="weight" aria-label="Peso">${[1, 2, 3, 4, 5].map((v) => `<option${(+s.weight || 1) === v ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
@@ -261,19 +263,19 @@ const Subjects = {
           <label class="goal"><input type="number" min="0" max="5000" value="${s.goalQ || ''}" placeholder="0" data-f="goalQ" aria-label="Questões por semana"> questões</label>
         </div>
         ${n ? `<div class="ed-progress"><div class="bar"><i style="width:${((ns / n) * 100).toFixed(1)}%;background:${Store.subjectColor(s.id)}"></i></div><span>${ns}/${n} estudados · ${nr} revisados</span></div>` : ''}
-        ${n ? `<div class="tbl-wrap"><table class="tbl topics"><thead><tr><th>Tema</th><th>Incidência</th><th>Teoria</th><th>Revisão</th><th>Questões</th><th>% acerto</th><th></th><th></th></tr></thead><tbody>
+        ${n ? `<div class="tbl-wrap"><table class="tbl topics"><thead><tr><th>${T.P}</th><th>Incidência</th><th>Teoria</th><th>Revisão</th><th>Questões</th><th>% acerto</th><th></th><th></th></tr></thead><tbody>
           ${s.topics.map((t) => { const q = qBy.get(t.id); return `<tr data-tid="${t.id}">
-            <td><input class="tname" value="${esc(t.name)}" data-t="name" maxlength="80" aria-label="Nome do tema"></td>
+            <td><input class="tname" value="${esc(t.name)}" data-t="name" maxlength="80" aria-label="Nome do ${T.p}"></td>
             <td><select class="tinc inc-${t.inc || 'x'}" data-t="inc" aria-label="Incidência"><option value="">—</option>${opt(INC, t.inc || '')}</select></td>
             <td><input type="checkbox" data-t="studied"${t.studied ? ' checked' : ''} aria-label="Teoria estudada"></td>
             <td><input type="checkbox" data-t="reviewed"${t.reviewed ? ' checked' : ''} aria-label="Revisado"></td>
             <td>${q ? Fmt.int(q.q) : dash}</td><td>${q ? Fmt.pct(q.c / q.q) : dash}</td>
             <td><button class="kebab note-btn${t.notes ? ' has' : ''}" data-note title="${t.notes ? 'Ver anotações' : 'Anotações e links'}" aria-label="Anotações">${noteIco}</button></td>
-            <td><button class="kebab" data-del-topic title="Excluir tema" aria-label="Excluir tema">×</button></td></tr>`; }).join('')}
+            <td><button class="kebab" data-del-topic title="Excluir ${T.p}" aria-label="Excluir ${T.p}">×</button></td></tr>`; }).join('')}
         </tbody></table></div>` : ''}
-        <form class="tadd"><textarea name="names" rows="1" placeholder="Novo tema — ou cole uma lista, um por linha"></textarea><button class="btn" type="submit">Adicionar</button></form>
+        <form class="tadd"><textarea name="names" rows="1" placeholder="Novo ${T.p} — ou cole uma lista, um por linha"></textarea><button class="btn" type="submit">Adicionar</button></form>
       </div>`;
-    }).join('') : '<p class="empty">Nenhuma área ainda. Carregue o modelo das 5 grandes áreas acima ou adicione a primeira.</p>';
+    }).join('') : `<p class="empty">Nenhuma ${T.s} ainda. ${Profile.get().templateLabel ? 'Carregue o modelo pronto acima ou adicione' : 'Adicione'} a primeira.</p>`;
   },
 };
 
@@ -307,7 +309,7 @@ const Week = {
     if (!rows.length) {
       el.hidden = !subs.length;
       el.innerHTML = `<div class="panel-head"><h3>Metas da semana</h3></div>
-        <p class="hint" style="margin:0">Defina metas semanais (horas e questões) por área para o app sugerir o que estudar a seguir.
+        <p class="hint" style="margin:0">Defina metas semanais (horas e questões) por ${T.s} para o app sugerir o que estudar a seguir.
         <button class="link" data-open-subjects>Definir metas</button></p>`;
       return;
     }

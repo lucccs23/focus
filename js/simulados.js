@@ -50,11 +50,11 @@ const Sims = {
     const val = (sid, k) => { const r = sim?.rows.find((x) => x.subjectId === sid); return r && r.total ? r[k] : ''; };
     $('#simRows').innerHTML = ids.length ? `
       <div class="sim-grid">
-        <span class="muted">Área</span><span class="muted">Questões</span><span class="muted">Acertos</span>
+        <span class="muted">${T.S}</span><span class="muted">Questões</span><span class="muted">Acertos</span>
         ${ids.map((sid) => `<span class="tag" style="--c:${Store.subjectColor(sid)}">${esc(Store.subjectName(sid))}</span>
           <input type="number" min="0" max="500" data-sid="${sid || ''}" data-k="total" value="${val(sid, 'total')}" aria-label="Questões">
           <input type="number" min="0" max="500" data-sid="${sid || ''}" data-k="correct" value="${val(sid, 'correct')}" aria-label="Acertos">`).join('')}
-      </div>` : '<p class="hint">Cadastre suas áreas em “Áreas” para lançar a nota por área.</p>';
+      </div>` : `<p class="hint">Cadastre suas ${T.ss} em “${T.SS}” para lançar a nota por ${T.s}.</p>`;
     $('#simErr').textContent = '';
     f.hidden = false;
     f.name.focus();
@@ -80,7 +80,7 @@ const Sims = {
       if (correct > v.total) return err(`Em ${Store.subjectName(sid)}, os acertos passam do total.`);
       rows.push({ subjectId: sid || null, total: v.total, correct });
     }
-    if (!rows.length) return err('Preencha as questões de pelo menos uma área.');
+    if (!rows.length) return err(`Preencha as questões de pelo menos uma ${T.s}.`);
     const date = f.date.value === D.key(Date.now()) ? Date.now() : D.fromKey(f.date.value) + 12 * 3600000;
     const inst = f.inst.value.trim().slice(0, 40);
     const cut = f.cut.value === '' ? null : Math.max(0, Math.min(100, Math.round(+f.cut.value * 10) / 10));
@@ -145,12 +145,12 @@ const Sims = {
       <h4 class="stats-h">Evolução</h4>
       <div class="chart" id="chartSim"></div>
       <div class="legend"><span><i style="background:var(--ok)"></i>Acertos</span><span><i style="background:var(--err)"></i>Erros</span><span><i class="ln" style="background:var(--rate)"></i>Nota (ponderada)</span></div>
-      <h4 class="stats-h">Por área <small>(últimos ${recent.length})</small></h4>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Área</th>${recent.map((s) => `<th title="${esc(s.name)}">${D.ddmm(s.date)}</th>`).join('')}</tr></thead><tbody>
+      <h4 class="stats-h">Por ${T.s} <small>(últimos ${recent.length})</small></h4>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>${T.S}</th>${recent.map((s) => `<th title="${esc(s.name)}">${D.ddmm(s.date)}</th>`).join('')}</tr></thead><tbody>
         ${sids.map((sid) => `<tr><td><span class="tag" style="--c:${Store.subjectColor(sid)}">${esc(Store.subjectName(sid))}</span></td>${recent.map((s) => `<td>${cell(s, sid)}</td>`).join('')}</tr>`).join('')}
       </tbody></table></div>
       <h4 class="stats-h">Todos os simulados</h4>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Simulado</th><th>Instituição</th><th>Data</th><th>Questões</th><th>Acertos</th><th>Nota</th><th>Corte</th><th></th></tr></thead><tbody>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Simulado</th><th>${T.I}</th><th>Data</th><th>Questões</th><th>Acertos</th><th>Nota</th><th>Corte</th><th></th></tr></thead><tbody>
         ${sims.slice().reverse().map((s) => { const x = tot(s); return `<tr data-id="${s.id}"><td>${esc(s.name)}</td><td>${s.inst ? esc(s.inst) : '<span class="muted">—</span>'}</td><td>${D.ddmmyy(s.date)}</td><td>${x.t}</td><td>${x.c}</td><td>${pct(this.score(s))}</td><td>${vsCut(s)}</td>
           <td class="actions"><button class="kebab" data-sim="edit" title="Editar" aria-label="Editar">✎</button><button class="kebab" data-sim="del" title="Excluir" aria-label="Excluir">×</button></td></tr>`; }).join('')}
       </tbody></table></div>`;

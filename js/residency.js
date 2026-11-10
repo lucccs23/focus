@@ -51,9 +51,8 @@ const DIFF = { 1: { label: 'Fácil', f: 0.8 }, 2: { label: 'Média', f: 1 }, 3: 
 const Plan = {
   init() {
     // lista de instituições para todos os campos com list="instList"
-    const used = new Set(INSTITUTIONS);
-    $('#instList').innerHTML = INSTITUTIONS.map((x) => `<option value="${esc(x)}">`).join('');
     this.refreshInst = () => {
+      const used = new Set(Profile.get().insts());
       [...Store.data.questions, ...Store.data.simulados, ...(Store.data.settings.exams || [])].forEach((x) => { const n = x.inst || x.name; if (n) used.add(n); });
       $('#instList').innerHTML = [...used].map((x) => `<option value="${esc(x)}">`).join('');
     };
@@ -67,7 +66,7 @@ const Plan = {
   /* ---------- modelo das grandes áreas ---------- */
   loadTemplate() {
     let ns = 0, nt = 0;
-    RES_TEMPLATE.forEach(([name, color, topics]) => {
+    (Profile.template() || []).forEach(([name, color, topics]) => {
       const before = Store.data.subjects.length;
       const s = Store.addSubject(name, { color, weight: 1, diff: 2 });
       if (Store.data.subjects.length > before) ns++;
@@ -160,7 +159,7 @@ const Plan = {
     if (!ex && !weak.length) {
       el.hidden = !hasTopics;
       el.innerHTML = `<div class="panel-head"><h3>Provas-alvo</h3></div>
-        <p class="hint" style="margin:0">Cadastre a data das provas (ENARE, USP, SUS-SP…) para ver quanto falta e o ritmo necessário.
+        <p class="hint" style="margin:0">Cadastre a data das provas (${T.exams}) para ver quanto falta e o ritmo necessário.
         <button class="link" data-edit-exams>Cadastrar provas</button></p>`;
       return;
     }
@@ -173,10 +172,10 @@ const Plan = {
         <div class="exam-row">
           <div class="exam-days"><b>${p.days}</b><span>dia${p.days === 1 ? '' : 's'}</span></div>
           <div class="exam-pace">
-            ${p.total ? `<div><b>${Math.round((p.studied / p.total) * 100)}%</b> dos temas estudados <span class="muted">(${p.studied} de ${p.total})</span></div>
+            ${p.total ? `<div><b>${Math.round((p.studied / p.total) * 100)}%</b> dos ${T.pp} estudados <span class="muted">(${p.studied} de ${p.total})</span></div>
               <div class="bar sm"><i style="width:${((p.studied / p.total) * 100).toFixed(1)}%"></i></div>
-              <div class="muted">${p.left ? `Ritmo necessário: <b class="txt">${p.perWeek} tema${p.perWeek === 1 ? '' : 's'} por semana</b> para ver tudo até a prova` : 'Todos os temas estudados — foco em questões e revisão'}</div>`
-              : '<div class="muted">Cadastre os temas em Áreas para calcular o ritmo.</div>'}
+              <div class="muted">${p.left ? `Ritmo necessário: <b class="txt">${p.perWeek} ${T.p}${p.perWeek === 1 ? '' : 's'} por semana</b> para ver tudo até a prova` : `Todos os ${T.pp} estudados — foco em questões e revisão`}</div>`
+              : `<div class="muted">Cadastre os ${T.pp} em ${T.SS} para calcular o ritmo.</div>`}
           </div>
         </div>
         ${others.length ? `<div class="exam-others">${others.map((o) => `<span>${esc(o.name)} <b>${this.daysTo(o.date)}d</b></span>`).join('')}</div>` : ''}`;

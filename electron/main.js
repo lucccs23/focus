@@ -18,12 +18,12 @@ let prefs = { closeToTray: false };
 let trayHintShown = false;
 const failedShortcuts = [];
 
-// O app se chamava "Foco Lab": continua usando a mesma pasta de dados para nada se perder.
-// (Só troca se ninguém definiu outra pasta antes — ex.: os testes automatizados.)
-// FOCUS_USER_DATA: pasta de dados separada (usada nos testes, sem mexer nos dados reais).
+// O app se chamava "Foco Lab": quem já usava continua com a mesma pasta de dados (se ela existir).
+// Instalações novas usam a pasta padrão "Focus". FOCUS_USER_DATA: pasta separada (testes).
 if (process.env.FOCUS_USER_DATA) app.setPath('userData', process.env.FOCUS_USER_DATA);
 else if (app.getPath('userData') === path.join(app.getPath('appData'), app.getName())) {
-  app.setPath('userData', path.join(app.getPath('appData'), 'Foco Lab'));
+  const old = path.join(app.getPath('appData'), 'Foco Lab');
+  if (fs.existsSync(path.join(old, 'Local Storage'))) app.setPath('userData', old);
 }
 
 // segunda cópia aberta (com os mesmos dados): só traz a primeira para frente e encerra

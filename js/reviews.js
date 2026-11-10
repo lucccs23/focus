@@ -132,7 +132,7 @@ const Reviews = {
     if (!this.isOpen()) return;
     $$('#revTab button').forEach((b) => b.classList.toggle('on', b.dataset.v === this.tab));
     const sel = $('#revSubject');
-    sel.innerHTML = '<option value="all">Todas as áreas</option>' + Store.data.subjects.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    sel.innerHTML = `<option value="all">Todas as ${T.ss}</option>` + Store.data.subjects.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
     sel.value = Store.subject(this.subj) ? this.subj : 'all';
     const e = this.endOfToday();
     let list = Store.data.reviews.filter((r) => sel.value === 'all' || r.subjectId === sel.value);

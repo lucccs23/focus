@@ -1,10 +1,26 @@
 # Focus
 
-Pomodoro, cronômetro, tarefas e estatísticas de estudo e questões, pensado para quem estuda para residência médica. HTML/CSS/JS puro (sem build) rodando no Electron.
+Pomodoro, cronômetro, questões, revisões e estatísticas para quem estuda: residência médica, concursos, ENEM e vestibulares, faculdade ou qualquer outra prova. Funciona no celular, no tablet e no computador, até sem internet.
 
-## Abrir
+## Usar (qualquer pessoa)
 
-Dê dois cliques em **`Focus.exe`** (ou nos atalhos "Focus" da Área de Trabalho e do menu Iniciar). Ele abre o app **direto do código desta pasta**: qualquer atualização vale na próxima vez que abrir (ou com `Ctrl+R` com o app aberto). Não precisa instalar nada.
+Abra **https://lucccs23.github.io/focus/** e instale:
+
+- **Android (Chrome):** menu ⋮ → **Instalar app**.
+- **iPhone/iPad (Safari):** Compartilhar → **Adicionar à Tela de Início**.
+- **Computador (Chrome ou Edge):** ícone de instalar na barra de endereço, ou ⋮ → **Instalar Focus**. Abre em janela própria e se atualiza sozinho.
+
+Na primeira abertura, o Focus pergunta **para que você estuda** e ajusta os nomes (área/tema, matéria/assunto, disciplina…), o modelo pronto de matérias (residência, concurso, ENEM) e as sugestões de provas e bancas. Dá para mudar depois em Ajustes → Perfil de estudo. O **Guia rápido** fica no rodapé.
+
+**Seus dados são só seus.** Ficam guardados no navegador do aparelho; o link é só o programa. Cada pessoa que abre o link começa com o Focus vazio.
+
+**Usar no celular e no computador com os mesmos dados:** em Ajustes → "Sincronizar celular e computador", cada pessoa cria um código de acesso na **própria** conta do GitHub (grátis) e cola o mesmo código nos aparelhos dela. Nunca use o código de outra pessoa: os dados se misturariam.
+
+## Desenvolvimento (esta pasta)
+
+HTML/CSS/JS puro (sem build), com uma versão de desktop em Electron.
+
+Dê dois cliques em **`Focus.exe`** (ou nos atalhos "Focus" da Área de Trabalho e do menu Iniciar). Ele abre o app **direto do código desta pasta**: qualquer atualização vale na próxima vez que abrir (ou com `Ctrl+R` com o app aberto).
 
 Se a pasta `node_modules` sumir (ex.: projeto copiado para outro PC):
 
@@ -15,15 +31,13 @@ npm run runtime
 npm run shortcuts
 ```
 
-`npm run runtime` cria `runtime/Focus.exe`: o Electron com nome, ícone e versão do Focus (é o que aparece na barra de tarefas). `npm run shortcuts` recria os atalhos "Focus" apontando para ele.
+`npm run runtime` cria `runtime/Focus.exe`: o Electron com nome, ícone e versão do Focus (é o que aparece na barra de tarefas). `npm run shortcuts` recria os atalhos "Focus" apontando para ele. Para recompilar o `Focus.exe` (só se mexer em `build/launcher.cs`): `build\make-launcher.cmd`.
 
-Para recompilar o `Focus.exe` (só se mexer em `build/launcher.cs`): `build\make-launcher.cmd`.
+**Instalador:** `npm run dist` gera `dist/Focus Setup <versão>.exe` (instala como programa comum). Para outras pessoas, a versão pela internet é mais simples e se atualiza sozinha.
 
-**Instalador final:** `dist/Focus Setup 0.7.0.exe` instala o app como um programa comum (atalho "Focus"). Ele usa os mesmos dados do `Focus.exe` da pasta, mas só um dos dois abre por vez.
+**Publicar uma versão nova:** envie para o GitHub (`git push`); o GitHub Pages atualiza o link em 1 a 3 minutos. Aumente `VERSION` em `sw.js` para os aparelhos baixarem tudo de novo (o app mostra "Nova versão disponível").
 
-**Celular e tablet:** publicado no GitHub Pages, o app abre no navegador do celular e pode ser instalado em "Adicionar à tela inicial" (funciona offline). Os dados do celular ficam no celular; para levar dados entre PC e celular, use Ajustes → Exportar/Importar backup. Ao publicar uma versão nova, aumente `VERSION` em `sw.js`.
-
-Os dados ficam em `%APPDATA%\Foco Lab` (nome antigo do app, mantido para não perder nada), separados do código.
+**Dados no desktop:** `%APPDATA%\Focus` em instalações novas; quem já usava continua em `%APPDATA%\Foco Lab` (nome antigo do app).
 
 ## Funções
 
@@ -37,11 +51,12 @@ Os dados ficam em `%APPDATA%\Foco Lab` (nome antigo do app, mantido para não pe
 - **Alarmes**: sons diferentes para o fim do foco e da pausa, com volume próprio.
 - **Revisões editáveis**: os intervalos do caderno de erros (padrão 1, 7 e 30 dias) podem ser trocados, ex.: 1, 3, 7, 15, 30.
 - **Assistente de início**: na primeira abertura num aparelho sem dados, três passos (áreas, provas e ciclo).
+- **Perfil de estudo**: residência médica, concursos, ENEM e vestibulares, faculdade ou outro — muda os nomes usados no app, o modelo pronto e as sugestões de provas/bancas.
 - **Tarefas** de estudo ou de questões, ligadas a área e tema.
 - **Áreas, temas e metas** (`D`):
-  - botão que carrega as **5 grandes áreas da residência** (Clínica Médica, Cirurgia, Pediatria, GO e Preventiva) com os temas e a incidência de cada um;
+  - modelo pronto conforme o perfil: **5 grandes áreas da residência**, **matérias básicas de concurso** ou **áreas do ENEM**, com os temas e a incidência de cada um;
   - peso na prova e dificuldade por área; incidência (alta/média/baixa), teoria/revisão e **anotações com links** por tema.
-- **Provas-alvo**: cadastre as provas (ENARE, USP, SUS-SP…) com a data. A tela inicial mostra os dias que faltam e o **ritmo necessário** (temas por semana).
+- **Provas-alvo**: cadastre as provas (ENARE, ENEM, o seu concurso, a P1…) com a data. A tela inicial mostra os dias que faltam e o **ritmo necessário** (temas por semana).
 - **Atacar primeiro**: temas muito cobrados em que você acerta pouco, ou de alta incidência ainda não estudados, com um botão para estudar ou fazer questões.
 - **Ciclo de estudos**: informe as horas e as questões por semana, e o app distribui as metas pelo peso e pela dificuldade de cada área. "Estudar agora" escolhe a área mais atrasada e o tema mais fraco dela.
 - **Caderno de erros** (`C`): todo registro com erros vira revisão em 1, 7 e 30 dias; "Colar questões erradas" separa as questões coladas e identifica código, instituição, ano e gabarito.
