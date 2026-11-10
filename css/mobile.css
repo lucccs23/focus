@@ -382,3 +382,13 @@ body:not(.f-ce) .ce-only, body:not(.f-essay) .essay-only, body:not(.f-college) .
 .grade label { font-size: 11.5px; gap: 4px; }
 @media (max-width: 520px) { .grade input[type=number] { width: 54px; padding: 6px 5px; } }
 
+/* simulado no celular: colunas estreitas para caber "em branco" e a nota */
+@media (max-width: 520px) {
+  .sim-grid { grid-template-columns: minmax(0, 1fr) 56px 56px; gap: 6px 8px; }
+  #simRows.ce .sim-grid { grid-template-columns: minmax(0, 1fr) 52px 52px 52px; }
+  .sim-grid.with-score { grid-template-columns: minmax(0, 1fr) 52px 52px 64px; }
+  #simRows.ce .sim-grid.with-score { grid-template-columns: minmax(0, 1fr) 46px 46px 46px 58px; }
+  .sim-grid input { padding: 8px 4px !important; text-align: center; }
+  .sim-grid .tag { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sim-grid > .muted { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}

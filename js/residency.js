@@ -141,7 +141,7 @@ const Plan = {
 
   /* ---------- ciclo por peso e dificuldade ---------- */
   distribute(hours, questions) {
-    const subs = Store.data.subjects;
+    const subs = Store.activeSubjects();
     const w = subs.map((s) => (+s.weight || 1) * (DIFF[s.diff || 2]?.f || 1));
     const tot = w.reduce((a, b) => a + b, 0) || 1;
     subs.forEach((s, i) => {
@@ -155,7 +155,7 @@ const Plan = {
     const el = $('#exams');
     const ex = this.nextExam();
     const weak = this.weak(4);
-    const hasTopics = Store.data.subjects.some((s) => s.topics.length);
+    const hasTopics = Store.activeSubjects().some((s) => s.topics.length);
     if (!ex && !weak.length) {
       el.hidden = !hasTopics;
       el.innerHTML = `<div class="panel-head"><h3>Provas-alvo</h3></div>

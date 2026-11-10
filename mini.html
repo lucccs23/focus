@@ -64,6 +64,9 @@
   if (window.desktop) {
     desktop.onState((s) => {
       document.body.dataset.mode = s.mode;
+      // cor de destaque escolhida no app (vale para o modo de foco)
+      if (/^#[0-9a-f]{6}$/i.test(s.accent || '')) document.documentElement.style.setProperty('--c-focus', s.accent);
+      else document.documentElement.style.removeProperty('--c-focus');
       el('time').textContent = s.text;
       el('lbl').textContent = s.started && !s.running ? 'Pausado' : (s.task || s.label);
       el('lbl').title = s.task ? `${s.label} · ${s.task}` : s.label;

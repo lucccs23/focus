@@ -169,7 +169,7 @@ const App = {
     if (!dk) return;
     const def = Timer.def;
     const s = {
-      text: Timer.display(), label: def.label, mode: Timer.colorMode(),
+      text: Timer.display(), label: def.label, mode: Timer.colorMode(), accent: Store.data.settings.accent || '',
       running: Timer.running, started: Timer.isStarted(),
       progress: def.countdown && Timer.isStarted() ? +(1 - Timer.progress()).toFixed(3) : -1,
       task: def.focus ? Store.activeTask()?.title || '' : '',

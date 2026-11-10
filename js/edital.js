@@ -83,7 +83,7 @@ const Edital = {
     if (!this.parsed.length) {
       box.innerHTML = `<p class="hint" style="margin:0">Cole acima o conteúdo programático do edital. O app separa as ${T.ss} pelos títulos em maiúsculas (ex.: "LÍNGUA PORTUGUESA:") e os ${T.pp} pela numeração (1, 2, 3…).</p>`;
     } else {
-      const subs = Store.data.subjects;
+      const subs = Store.activeSubjects();
       box.innerHTML = this.parsed.map((p, i) => `<div class="ed-item">
         <label class="switch"><input type="checkbox" data-i="${i}" checked></label>
         <div class="ed-main">

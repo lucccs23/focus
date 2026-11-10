@@ -100,7 +100,7 @@ const Report = {
         <td>${s.goalH ? `${Fmt.dur(x.f)} / ${s.goalH}h (${Math.round(Math.min(1, x.f / (s.goalH * 3600000)) * 100)}%)` : '—'}</td>
         <td>${s.goalQ ? `${x.q} / ${s.goalQ} (${Math.round(Math.min(1, x.q / s.goalQ) * 100)}%)` : '—'}</td></tr>`;
     };
-    const topics = Store.data.subjects.flatMap((s) => s.topics);
+    const topics = Store.activeSubjects().flatMap((s) => s.topics);
     const studied = topics.filter((t) => t.studied).length;
 
     return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório semanal — Focus</title>

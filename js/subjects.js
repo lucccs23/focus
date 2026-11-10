@@ -18,7 +18,10 @@ const Pick = {
   },
 
   fill(form, subjectId, topicId) {
+    // matérias em uso + a do registro, se for de um semestre encerrado (para não perdê-la ao editar)
     const subs = Store.activeSubjects();
+    const cur = Store.subject(subjectId);
+    if (cur?.archived) subs.push(cur);
     form.subjectId.innerHTML = `<option value="">Sem ${T.s}</option>`
       + subs.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')
       + `<option value="__new">+ Nova ${T.s}…</option>`;
@@ -105,7 +108,7 @@ const Subjects = {
       const f = e.target, s = Store.data.settings;
       const h = Math.max(0, Math.min(150, +f.hours.value || 0)), q = Math.max(0, Math.min(5000, Math.round(+f.qs.value || 0)));
       if (!h && !q) { App.toast('Informe as horas e/ou questões por semana'); return; }
-      if (!Store.data.subjects.length) { App.toast(`Cadastre as ${T.ss} primeiro`); return; }
+      if (!Store.activeSubjects().length) { App.toast(`Cadastre as ${T.ss} primeiro`); return; }
       s.weeklyH = h; s.weeklyQ = q;
       Plan.distribute(h, q);
       App.toast('Metas semanais distribuídas pelo peso e pela dificuldade');
@@ -320,7 +323,7 @@ const Week = {
 
   render() {
     const el = $('#week');
-    const subs = Store.data.subjects;
+    const subs = Store.activeSubjects();
     const rows = this.progress();
     if (!rows.length) {
       el.hidden = !subs.length;

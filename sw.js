@@ -1,7 +1,7 @@
 'use strict';
 // Service worker da versão de celular: guarda o app no aparelho para abrir sem internet.
 // Ao publicar uma versão nova, mude VERSION para os aparelhos baixarem tudo de novo.
-const VERSION = 'focus-1.2.0';
+const VERSION = 'focus-1.2.1';
 const FILES = [
   './', './index.html', './manifest.webmanifest',
   './css/style.css', './css/features.css', './css/themes.css', './css/mobile.css',

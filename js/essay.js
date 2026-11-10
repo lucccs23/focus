@@ -19,7 +19,6 @@ const Essay = {
   init() {
     this.dlg = $('#essayDlg');
     const f = $('#essayForm');
-    f.innerHTML; // (formulário fixo no HTML)
     $('#essayComps').innerHTML = COMPETENCIES.map(([c, l], i) => `<label class="fld"><span title="${l}">${c} · ${l}</span>
       <select name="c${i}">${[0, 40, 80, 120, 160, 200].map((v) => `<option value="${v}">${v}</option>`).join('')}</select></label>`).join('');
     f.onsubmit = (e) => { e.preventDefault(); this.save(); };

@@ -71,9 +71,15 @@ const Cards = {
   next(c, k) {
     let { interval = 0, ease = 2.5, reps = 0 } = c;
     if (k === 'again') return { interval: 0, ease: Math.max(1.3, ease - 0.2), reps: 0, lapse: true };
-    if (k === 'hard') interval = reps === 0 ? 1 : Math.max(interval + 1, Math.round(interval * 1.2)), ease = Math.max(1.3, ease - 0.15);
+    if (k === 'hard') {
+      interval = reps === 0 ? 1 : Math.max(interval + 1, Math.round(interval * 1.2));
+      ease = Math.max(1.3, ease - 0.15);
+    }
     if (k === 'good') interval = reps === 0 ? 1 : reps === 1 ? 3 : Math.max(interval + 1, Math.round(interval * ease));
-    if (k === 'easy') interval = reps === 0 ? 4 : Math.max(interval + 2, Math.round(interval * ease * 1.3)), ease += 0.15;
+    if (k === 'easy') {
+      interval = reps === 0 ? 4 : Math.max(interval + 2, Math.round(interval * ease * 1.3));
+      ease += 0.15;
+    }
     return { interval, ease, reps: reps + 1 };
   },
   label(days) { return days === 0 ? '<10 min' : days === 1 ? '1 dia' : days < 30 ? `${days} dias` : days < 365 ? `${Math.round(days / 30)} mês(es)` : `${(days / 365).toFixed(1).replace('.', ',')} ano(s)`; },
