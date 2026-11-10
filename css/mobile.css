@@ -1,0 +1,86 @@
+/* ============================================================
+   v0.8 — celular e tablet: barra de navegação inferior, telas cheias,
+   alvos de toque, tablet deitado em duas colunas
+   ============================================================ */
+html { -webkit-text-size-adjust: 100%; }
+button, .seg label, .switch, summary, .task, .imp-item { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* toque: resposta visual ao tocar e campos sem zoom automático no iPhone (precisa de 16px) */
+@media (hover: none) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea { font-size: 16px; }
+  .btn, .icon-btn, .ctrl, .play, .chk, .kebab, .seg button, .seg label span { transition: transform .08s, background .15s; }
+  .btn:active, .icon-btn:active, .ctrl:active, .kebab:active, .seg button:active { transform: scale(.95); }
+  .play:active { transform: scale(.94); }
+  .task:active { background: var(--surface-2); }
+}
+
+/* ---------- celular: navegação embaixo, como app ---------- */
+@media (max-width: 640px) {
+  .top-actions {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    display: flex; flex-wrap: nowrap; justify-content: space-around; gap: 0; width: auto;
+    padding: 6px max(4px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .top-actions .nav-btn { flex: 1 1 0; min-width: 0; padding: 6px 1px 4px; gap: 4px; border-radius: 12px; color: var(--muted); }
+  .top-actions .nav-btn svg { width: 22px; height: 22px; }
+  .top-actions .nav-lbl { display: block; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .top-actions .nav-btn .badge { right: auto; left: calc(50% + 4px); top: 1px; }
+  .topbar { margin-bottom: 12px; }
+  .app { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .upd { bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+  /* telas (diálogos grandes) ocupam a tela inteira */
+  dialog.dlg.mid, dialog.dlg.wide {
+    width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0;
+    border: 0; border-radius: 0; box-shadow: none;
+  }
+  dialog.dlg.mid .dlg-head, dialog.dlg.wide .dlg-head { padding-top: calc(14px + env(safe-area-inset-top)); }
+  /* formulários curtos sobem de baixo (como as folhas do celular) */
+  dialog.dlg:not(.mid):not(.wide) {
+    width: 100vw; max-width: 100vw; max-height: 92dvh; margin: auto 0 0;
+    border-width: 1px 0 0; border-radius: 20px 20px 0 0;
+  }
+  dialog.dlg:not(.mid):not(.wide) .dlg-head { border-radius: 20px 20px 0 0; }
+  dialog.dlg:not(.mid):not(.wide) .dlg-head::before {
+    content: ''; position: absolute; top: 6px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--line-strong);
+  }
+  dialog.dlg[open] { animation: sheet-up .22s cubic-bezier(.2, .8, .3, 1); }
+  .dlg-inner { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .dlg-head h3 { font-size: 18px; }
+  .x { width: 40px; height: 40px; font-size: 26px; }
+  .dlg-foot { gap: 10px; margin-top: 14px; }
+  .dlg-foot .btn { flex: 1; padding: 12px 14px; font-size: 15px; }
+  .fld { margin-bottom: 16px; }
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select { padding: 11px 12px; }
+  .switch { padding: 4px 0; }
+  .rev-tools .btn, .hist-nav .btn { padding: 9px 12px; }
+  .rev-tools select { flex: 1 1 100%; width: 100%; }
+  .rev-tools .btn { flex: 1 1 auto; }
+}
+@keyframes sheet-up { from { transform: translateY(30px); opacity: .3; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { dialog.dlg[open] { animation: none; } }
+
+/* ---------- tablet deitado: timer à esquerda, o resto à direita ---------- */
+@media (min-width: 900px) and (pointer: coarse) {
+  .app { max-width: 1180px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 28px; align-items: start; }
+  .topbar, .foot { grid-column: 1 / -1; }
+  .timer-card { grid-column: 1; grid-row: 2 / span 5; position: sticky; top: max(20px, env(safe-area-inset-top)); }
+  .today, #week, #reviewsToday, .tasks { grid-column: 2; }
+  .today { margin: 0 0 16px; }
+  .panel { margin: 0 0 16px; }
+  .ring-wrap { width: min(320px, 34vw); }
+}
+
+/* ---------- aviso de nova versão (app instalado) ---------- */
+.upd {
+  position: fixed; left: 50%; bottom: 24px; z-index: 101; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 24px);
+  padding: 10px 10px 10px 16px; border-radius: 12px; background: var(--text); color: var(--bg);
+  font-size: 13.5px; box-shadow: var(--shadow-lg);
+}
+.upd .btn { border: 0; }
+#installSec[hidden] { display: none; }

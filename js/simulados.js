@@ -93,7 +93,7 @@ const Sims = {
   render() {
     if (!this.isOpen()) return;
     const sims = this.sorted();
-    if (!sims.length) { $('#simBody').innerHTML = '<p class="empty">Nenhum simulado ainda. Clique em “+ Novo simulado” para lançar o primeiro.</p>'; return; }
+    if (!sims.length) { $('#simBody').innerHTML = `<p class="empty">Nenhum simulado ainda. ${TOUCH ? 'Toque' : 'Clique'} em “+ Novo simulado” para lançar o primeiro.</p>`; return; }
     const tot = (s) => ({ t: sum(s.rows, (r) => r.total), c: sum(s.rows, (r) => r.correct) });
     const pct = (c, t) => (t ? Fmt.pct(c / t) : '—');
     const last = sims[sims.length - 1], prev = sims[sims.length - 2];

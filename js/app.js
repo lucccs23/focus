@@ -50,6 +50,7 @@ const App = {
     setInterval(() => { const k = D.key(Date.now()); if (k !== lastDay) { lastDay = k; this.renderAll(); } Backup.run(false); }, 60000);
     Backup.run(false);
     Sync.init();
+    this.initPwa();
     // versão de celular/navegador: guarda o app no aparelho para funcionar offline
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !window.desktop) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -180,11 +181,33 @@ const App = {
     this.toast(msg);
     if (!live) return;
     this.beep();
+    // celular: vibra junto com o som (útil no silencioso)
+    if (!window.desktop && Store.data.settings.sound) try { navigator.vibrate?.([250, 120, 250]); } catch (_) { /* sem vibração */ }
     window.desktop?.attention();
     const st = Store.data.settings;
     if (st.notify && 'Notification' in window && Notification.permission === 'granted') this.notify(msg);
     const t = Store.activeTask();
     if (wasMode === 'pomodoro' && t?.type === 'questoes' && st.askQuestions) this.openQ({ taskId: t.id });
+  },
+
+  /* ---------- app instalado (celular/tablet) ---------- */
+  isStandalone() { return !!(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone); },
+  isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); },
+
+  initPwa() {
+    if (window.desktop) return;
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); this._installEvt = e; if ($('#settingsDlg').open) Settings.fillInstall(); });
+    window.addEventListener('appinstalled', () => { this._installEvt = null; this.toast('Focus instalado na tela inicial'); if ($('#settingsDlg').open) Settings.fillInstall(); });
+    $('#updBtn').onclick = () => location.reload();
+    const sw = navigator.serviceWorker;
+    if (!sw) return;
+    // versão nova publicada: avisa (só se já havia uma versão rodando antes)
+    const had = !!sw.controller;
+    sw.addEventListener('controllerchange', () => {
+      if (!had) return;
+      if (Timer.running) { this._updPending = true; return; } // não interrompe um timer rodando
+      $('#updBar').hidden = false;
+    });
   },
 
   notify(msg) {
@@ -259,7 +282,7 @@ const App = {
     const t = Store.activeTask();
     this.set('#activeTask', 'innerHTML', t
       ? `Trabalhando em: <b>${esc(t.title)}</b>`
-      : (def.focus ? 'Nenhuma tarefa ativa — clique numa tarefa para vincular o tempo.' : ''));
+      : (def.focus ? `Nenhuma tarefa ativa — ${TAP} numa tarefa para vincular o tempo.` : ''));
 
     const now = Date.now();
     this.set('#realtime', 'textContent', started
@@ -276,6 +299,7 @@ const App = {
     if (document.title !== title) document.title = title;
     this.sendDesktopState();
     this.syncWakeLock();
+    if (this._updPending && !running) { this._updPending = false; $('#updBar').hidden = false; }
   },
 
   renderToday() {
@@ -620,6 +644,7 @@ const Settings = {
     });
     $('#btnDemo').textContent = Store.hasDemo() ? 'Remover dados de exemplo' : 'Carregar dados de exemplo';
     $('#desktopSec').hidden = !window.desktop;
+    this.fillInstall();
     $('#wakeWrap').hidden = !!window.desktop || !navigator.wakeLock;
     $('#dataHint').textContent = window.desktop
       ? 'Tudo fica salvo neste computador. Exporte um backup de vez em quando.'
@@ -643,6 +668,19 @@ const Settings = {
       sel.insertAdjacentHTML('beforeend', `<option value="${v}" data-custom>${Math.round(z * 100)}%</option>`);
     }
     sel.value = v;
+  },
+
+  fillInstall() {
+    const sec = $('#installSec');
+    if (window.desktop || App.isStandalone()) { sec.hidden = true; return; }
+    sec.hidden = false;
+    const evt = App._installEvt;
+    $('#btnInstall').hidden = !evt;
+    $('#installHint').textContent = evt
+      ? 'Instale para abrir pela tela inicial, em tela cheia e sem internet.'
+      : App.isIOS()
+        ? 'No Safari, toque em Compartilhar (quadrado com seta) e depois em "Adicionar à Tela de Início".'
+        : 'No menu do navegador (⋮), escolha "Instalar app" ou "Adicionar à tela inicial".';
   },
 
   fillSync() { $('#syncInfo').textContent = Sync.status(); },
@@ -698,6 +736,14 @@ const Settings = {
       Backup.run(false);
     };
     $('#btnBackupNow').onclick = () => Backup.run(true);
+    $('#btnInstall').onclick = async () => {
+      const evt = App._installEvt;
+      if (!evt) return;
+      App._installEvt = null;
+      evt.prompt();
+      try { await evt.userChoice; } catch (_) { /* ignora */ }
+      this.fillInstall();
+    };
     $('#btnSyncDir').onclick = async () => {
       const dir = await window.desktop?.pickDir?.();
       if (!dir) return;

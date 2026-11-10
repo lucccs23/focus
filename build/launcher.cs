@@ -10,8 +10,8 @@ using System.Windows.Forms;
 [assembly: AssemblyTitle("Focus")]
 [assembly: AssemblyProduct("Focus")]
 [assembly: AssemblyDescription("Pomodoro, cronômetro e estatísticas de estudo")]
-[assembly: AssemblyVersion("0.7.0.0")]
-[assembly: AssemblyFileVersion("0.7.0.0")]
+[assembly: AssemblyVersion("0.8.0.0")]
+[assembly: AssemblyFileVersion("0.8.0.0")]
 
 static class Launcher
 {

@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/features.css">
 <link rel="stylesheet" href="css/themes.css">
+<link rel="stylesheet" href="css/mobile.css">
 <script>
   // aplica o tema salvo antes de desenhar a página (evita piscar)
   try { const t = JSON.parse(localStorage.getItem('focolab.v1') || '{}').settings?.theme; if (t && t !== 'system') document.documentElement.dataset.theme = t; } catch (_) {}
@@ -113,7 +114,7 @@
     <button class="add-task" id="btnAddTask">+ Adicionar tarefa</button>
   </section>
 
-  <footer class="foot">Focus v0.7 · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
+  <footer class="foot">Focus v0.8 · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
 </div>
 
 <!-- Atalhos -->
@@ -420,6 +421,12 @@
       </div>
     </div>
 
+    <div class="set-sec" id="installSec" hidden>
+      <h4>Instalar no aparelho</h4>
+      <p class="hint" id="installHint"></p>
+      <button class="btn primary" id="btnInstall" hidden>Instalar o Focus</button>
+    </div>
+
     <div class="set-sec">
       <h4>Dados</h4>
       <p class="hint" id="dataHint">Tudo fica salvo neste computador. Exporte um backup de vez em quando.</p>
@@ -453,6 +460,7 @@
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="upd" id="updBar" role="status" hidden>Nova versão do Focus disponível <button class="btn primary sm" id="updBtn">Atualizar</button></div>
 
 <script src="js/store.js"></script>
 <script src="js/timer.js"></script>

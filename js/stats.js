@@ -204,7 +204,7 @@ const Stats = {
       </div>
 
       ${this.byTopic() ? `<h4 class="stats-h">Por assunto — ${esc(Store.subjectName(st.subject))} <small>(<button class="link" data-k-clear>voltar para todas as matérias</button>)</small></h4>`
-        : '<h4 class="stats-h">Por matéria <small>(clique numa linha para ver os assuntos dela)</small></h4>'}
+        : `<h4 class="stats-h">Por matéria <small>(${TAP} numa linha para ver os assuntos dela)</small></h4>`}
       <div class="tbl-wrap">${this.subjectTable(r)}</div>`;
 
     this._B = r.B;

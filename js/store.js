@@ -6,6 +6,9 @@ const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-5);
 const pad = (n) => String(n).padStart(2, '0');
 const DAY = 86400000;
+// tela de toque (celular/tablet): textos dizem "toque" em vez de "clique"
+const TOUCH = !!window.matchMedia?.('(hover: none)').matches;
+const TAP = TOUCH ? 'toque' : 'clique';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = (arr, fn) => arr.reduce((a, x) => a + (fn(x) || 0), 0);
 
