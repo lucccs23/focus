@@ -43,6 +43,7 @@ const App = {
     Cloud.bind();
     Dash.init();
     Settings.bind();
+    Custom.init();
     Timer.init();
     this.bind();
     this.bindDesktop();
@@ -54,6 +55,7 @@ const App = {
     setInterval(() => { const k = D.key(Date.now()); if (k !== lastDay) { lastDay = k; this.renderAll(); } Backup.run(false); }, 60000);
     Backup.run(false);
     Sync.init();
+    setTimeout(() => Custom.maybeWelcome(), 400);
     this.initPwa();
     // versão de celular/navegador: guarda o app no aparelho para funcionar offline
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !window.desktop) {
@@ -140,12 +142,24 @@ const App = {
     dk.setPrefs?.({ closeToTray: !!Store.data.settings.closeToTray });
   },
 
+  // abas do timer: as fixas + os timers personalizados
+  renderModeTabs() {
+    const ps = Timer.presets();
+    const key = ps.map((p) => p.id + p.label).join('|');
+    if (this._tabsKey === key) return;
+    this._tabsKey = key;
+    this._tabMode = null;
+    const tabs = [['pomodoro', 'Pomodoro'], ['short', 'Pausa curta'], ['long', 'Pausa longa'], ['stopwatch', 'Cronômetro'], ...ps.map((p) => ['p:' + p.id, p.label])];
+    $('#modeTabs').innerHTML = tabs.map(([m, l]) => `<button data-mode="${m}">${esc(l)}</button>`).join('');
+    $('#modeTabs').classList.toggle('many', tabs.length > 4);
+  },
+
   sendDesktopState() {
     const dk = window.desktop;
     if (!dk) return;
     const def = Timer.def;
     const s = {
-      text: Timer.display(), label: def.label, mode: Timer.s.mode,
+      text: Timer.display(), label: def.label, mode: Timer.colorMode(),
       running: Timer.running, started: Timer.isStarted(),
       progress: def.countdown && Timer.isStarted() ? +(1 - Timer.progress()).toFixed(3) : -1,
       task: def.focus ? Store.activeTask()?.title || '' : '',
@@ -159,6 +173,7 @@ const App = {
   onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.target.closest('input, textarea, select')) return;
+    if (e.key === 'Escape' && document.body.classList.contains('zen') && !document.querySelector('dialog[open]')) { Custom.zen(false); return; }
     if (document.querySelector('dialog[open]')) {
       if (e.key.toLowerCase() === 'e' && Stats.isOpen()) Stats.dlg.close();
       return;
@@ -168,7 +183,7 @@ const App = {
       ' ': () => Timer.toggle(), n: () => this.skip(), r: () => this.stop(),
       e: () => Stats.open(), t: () => this.openTask(), m: () => window.desktop?.toggleMini(), q: () => this.openQ({ taskId: Store.activeTask()?.id }),
       '?': () => $('#keysDlg').showModal(),
-      h: () => History.open(Date.now()), d: () => Subjects.open(), c: () => Reviews.open(), s: () => Sims.open(), f: () => Cards.open(),
+      h: () => History.open(Date.now()), d: () => Subjects.open(), c: () => Reviews.open(), s: () => Sims.open(), f: () => Cards.open(), z: () => Custom.zen(),
       1: () => Timer.setMode('pomodoro'), 2: () => Timer.setMode('short'), 3: () => Timer.setMode('long'), 4: () => Timer.setMode('stopwatch'),
     };
     if (map[k]) { e.preventDefault(); this.closeMenu(); map[k](); }
@@ -181,18 +196,18 @@ const App = {
   },
   skip() { Timer.s.mode === 'stopwatch' ? this.stop() : Timer.skip(); },
 
-  onTimerComplete(wasMode, msg, live) {
+  onTimerComplete(wasMode, msg, live, wasFocus) {
     this.renderAll();
     this.toast(msg);
     if (!live) return;
-    this.beep();
+    Custom.alarm(wasFocus ? 'focus' : 'break');
     // celular: vibra junto com o som (útil no silencioso)
     if (!window.desktop && Store.data.settings.sound) try { navigator.vibrate?.([250, 120, 250]); } catch (_) { /* sem vibração */ }
     window.desktop?.attention();
     const st = Store.data.settings;
     if (st.notify && 'Notification' in window && Notification.permission === 'granted') this.notify(msg);
     const t = Store.activeTask();
-    if (wasMode === 'pomodoro' && t?.type === 'questoes' && st.askQuestions) this.openQ({ taskId: t.id });
+    if (wasFocus && wasMode !== 'stopwatch' && t?.type === 'questoes' && st.askQuestions) this.openQ({ taskId: t.id });
   },
 
   /* ---------- app instalado (celular/tablet) ---------- */
@@ -269,10 +284,12 @@ const App = {
 
   renderTimer() {
     const s = Timer.s, def = Timer.def, running = Timer.running, started = Timer.isStarted();
+    this.renderModeTabs();
     if (this._tabMode !== s.mode) {
       this._tabMode = s.mode;
-      document.body.dataset.mode = s.mode;
-      $$('#modeTabs button').forEach((b) => b.classList.toggle('on', b.dataset.mode === s.mode));
+      document.body.dataset.mode = Timer.colorMode();
+      const tab = s.mode.startsWith('pb:') ? 'p:' + s.mode.slice(3) : s.mode;
+      $$('#modeTabs button').forEach((b) => b.classList.toggle('on', b.dataset.mode === tab));
     }
     const txt = Timer.display();
     this.set('#time', 'textContent', txt);
@@ -280,6 +297,7 @@ const App = {
     const bar = $('#ringBar');
     bar.style.strokeDasharray = RING_C;
     bar.style.strokeDashoffset = (RING_C * (1 - Timer.progress())).toFixed(2);
+    $('#ringLin').style.width = ((1 - Timer.progress()) * 100).toFixed(2) + '%';
     this.set('#btnPlay', 'innerHTML', running ? ICON.pause : ICON.play);
     $('#btnStop').disabled = !started;
 
@@ -292,8 +310,16 @@ const App = {
 
     const t = Store.activeTask();
     this.set('#activeTask', 'innerHTML', t
-      ? `Trabalhando em: <b>${esc(t.title)}</b>`
-      : (def.focus ? `Nenhuma tarefa ativa — ${TAP} numa tarefa para vincular o tempo.` : ''));
+      ? `Trabalhando em: <b>${esc(t.title)}</b> <span class="caret">▾</span>`
+      : (def.focus ? `Nenhuma tarefa ativa — <u>escolher tarefa</u> <span class="caret">▾</span>` : ''));
+    // contador rápido de questões (tarefa de questões ativa)
+    const qc = Timer.qc(), showQc = t?.type === 'questoes';
+    $('#qCounter').hidden = !showQc;
+    if (showQc) this.set('#qCounter', 'innerHTML', `
+      <button class="btn qc-ok" data-qc="ok" title="Acertei"><b>✓</b> Acertei <span>${qc.c}</span></button>
+      <button class="btn qc-no" data-qc="no" title="Errei"><b>✗</b> Errei <span>${qc.w}</span></button>
+      <button class="kebab" data-qc="undo" title="Desfazer o último" aria-label="Desfazer"${qc.c + qc.w ? '' : ' disabled'}>↺</button>
+      ${qc.c + qc.w ? `<button class="link" data-qc="save">registrar ${qc.c + qc.w}</button>` : ''}`);
 
     const now = Date.now();
     this.set('#realtime', 'textContent', started
@@ -475,8 +501,10 @@ const App = {
     f.taskId.value = tasks.some((t) => t.id === curTask) ? curTask : '';
     const a = Store.activeTask();
     Pick.fill(f, q ? q.subjectId : a?.subjectId, q ? q.topicId : a?.topicId);
-    f.total.value = q ? q.total : '';
-    f.correct.value = q ? q.correct : '';
+    const qc = Timer.qc();
+    const useQc = !q && qc.task && qc.task === (tasks.some((t) => t.id === curTask) ? curTask : null) && qc.c + qc.w > 0;
+    f.total.value = q ? q.total : useQc ? qc.c + qc.w : '';
+    f.correct.value = q ? q.correct : useQc ? qc.c : '';
     f.date.value = D.key(q ? q.date : date ?? Date.now());
     f.inst.value = q ? q.inst || '' : this._lastInst || '';
     Plan.refreshInst?.();
@@ -536,6 +564,7 @@ const App = {
       d.questions.push(nq);
       const note = f.note.value.trim();
       const rv = f.review.checked ? Store.scheduleReview({ subjectId: nq.subjectId, topicId: nq.topicId, wrong: total - correct, note, from: date, qId: nq.id }) : null;
+      if (Timer.qc().task && Timer.qc().task === nq.taskId) Timer.resetCount();
       this.toast(`Registrado: ${total} questões · ${Fmt.pct(correct / total)}${rv ? ` · revisão em ${D.ddmm(rv.due)}` : ''}`);
     }
     $('#qDlg').close();
@@ -591,25 +620,7 @@ const App = {
       if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
     } catch (_) { /* sem áudio */ }
   },
-  beep() {
-    if (!Store.data.settings.sound) return;
-    try {
-      this.unlockAudio();
-      const ctx = this.audioCtx, t0 = ctx.currentTime;
-      [784, 988, 1319].forEach((f, i) => {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        const st = t0 + i * 0.17;
-        o.type = 'sine';
-        o.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, st);
-        g.gain.exponentialRampToValueAtTime(0.22, st + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, st + 0.7);
-        o.connect(g).connect(ctx.destination);
-        o.start(st);
-        o.stop(st + 0.75);
-      });
-    } catch (_) { /* sem áudio */ }
-  },
+  beep() { Custom.alarm('focus'); },
 };
 
 /* ---------- backup automático (só no app de desktop) ---------- */
@@ -663,6 +674,10 @@ const Settings = {
     $('#desktopSec').hidden = !window.desktop;
     this.fillInstall();
     Cloud.fill();
+    Custom.renderLook();
+    Custom.renderNav();
+    Custom.renderPresets();
+    Custom.renderSteps();
     $('#wakeWrap').hidden = !!window.desktop || !navigator.wakeLock;
     $('#dataHint').textContent = window.desktop
       ? 'Tudo fica salvo neste computador. Exporte um backup de vez em quando.'
@@ -728,6 +743,9 @@ const Settings = {
     $('#btnImport').onclick = () => { this._merge = false; $('#fileImport').click(); };
     $('#btnMerge').onclick = () => { this._merge = true; $('#fileImport').click(); };
     $('#btnCsv').onclick = () => this.exportCsv();
+    $('#presetForm').onsubmit = (e) => { e.preventDefault(); Custom.addPreset(e.target); };
+    $('#stepsInput').onchange = (e) => Custom.saveSteps(e.target);
+    dlg.addEventListener('click', (e) => { const b = e.target.closest('[data-test-alarm]'); if (b) Custom.alarm(b.dataset.testAlarm, true); });
     $('#fileImport').onchange = (e) => this.importData(e.target.files[0], this._merge).finally(() => { e.target.value = ''; });
     $('#btnDemo').onclick = () => {
       if (Store.hasDemo()) { Store.removeDemo(); App.toast('Dados de exemplo removidos'); }
@@ -783,8 +801,10 @@ const Settings = {
   onSetting(i) {
     const k = i.dataset.set, s = Store.data.settings;
     if (i.tagName === 'SELECT') {
-      s[k] = i.value;
+      s[k] = k === 'fontScale' ? +i.value || 1 : i.value;
       if (k === 'theme') App.applyTheme();
+      if (['clockFont', 'ringStyle', 'fontScale'].includes(k)) Custom.applyLook();
+      if (k === 'alarmFocus' || k === 'alarmBreak') Custom.alarm(k === 'alarmFocus' ? 'focus' : 'break', true);
     } else if (i.type === 'checkbox') {
       s[k] = i.checked;
       if (k === 'notify' && i.checked) this.askNotify(i);

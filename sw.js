@@ -1,12 +1,12 @@
 'use strict';
 // Service worker da versão de celular: guarda o app no aparelho para abrir sem internet.
 // Ao publicar uma versão nova, mude VERSION para os aparelhos baixarem tudo de novo.
-const VERSION = 'focus-0.9.0';
+const VERSION = 'focus-1.0.0';
 const FILES = [
   './', './index.html', './manifest.webmanifest',
   './css/style.css', './css/features.css', './css/themes.css', './css/mobile.css',
   './js/store.js', './js/timer.js', './js/charts.js', './js/stats.js', './js/sound.js', './js/history.js',
-  './js/subjects.js', './js/reviews.js', './js/simulados.js', './js/sync.js', './js/report.js', './js/import.js', './js/residency.js', './js/cards.js', './js/cloud.js', './js/dash.js', './js/app.js',
+  './js/subjects.js', './js/reviews.js', './js/simulados.js', './js/sync.js', './js/report.js', './js/import.js', './js/residency.js', './js/cards.js', './js/cloud.js', './js/custom.js', './js/dash.js', './js/app.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png',
 ];
 

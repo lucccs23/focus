@@ -18,8 +18,12 @@
 <link rel="stylesheet" href="css/themes.css">
 <link rel="stylesheet" href="css/mobile.css">
 <script>
-  // aplica o tema salvo antes de desenhar a página (evita piscar)
-  try { const t = JSON.parse(localStorage.getItem('focolab.v1') || '{}').settings?.theme; if (t && t !== 'system') document.documentElement.dataset.theme = t; } catch (_) {}
+  // aplica o tema e a cor salvos antes de desenhar a página (evita piscar)
+  try {
+    const st = JSON.parse(localStorage.getItem('focolab.v1') || '{}').settings || {};
+    if (st.theme && st.theme !== 'system') document.documentElement.dataset.theme = st.theme;
+    if (/^#[0-9a-f]{6}$/i.test(st.accent || '')) document.documentElement.style.setProperty('--c-focus', st.accent);
+  } catch (_) {}
 </script>
 </head>
 <body data-mode="pomodoro">
@@ -57,6 +61,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V6"/><path d="M17 16V9"/></svg>
         <span class="nav-lbl"><span class="lbl-long">Estatísticas</span><span class="lbl-short">Números</span></span>
       </button>
+      <button class="icon-btn nav-btn" id="btnMore" title="Mais" aria-label="Mais opções" hidden>
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18.5" cy="12" r="1.8"/></svg>
+        <span class="nav-lbl">Mais</span>
+      </button>
       <button class="icon-btn nav-btn" id="btnSettings" title="Configurações" aria-label="Configurações">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></svg>
         <span class="nav-lbl">Ajustes</span>
@@ -65,14 +73,14 @@
   </header>
 
   <section class="card timer-card">
+    <button class="icon-btn sm zen-btn" id="btnZen" title="Modo foco — tela cheia (Z)" aria-label="Modo foco">
+      <svg class="zen-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      <svg class="zen-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+    </button>
     <button class="icon-btn sm sound-btn" id="btnSound" title="Som de fundo" aria-label="Som de fundo">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="wave" d="M15.5 9a4 4 0 0 1 0 6"/><path class="wave" d="M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
     </button>
     <div class="seg mode-tabs" id="modeTabs" role="tablist">
-      <button data-mode="pomodoro">Pomodoro</button>
-      <button data-mode="short">Pausa curta</button>
-      <button data-mode="long">Pausa longa</button>
-      <button data-mode="stopwatch">Cronômetro</button>
     </div>
 
     <div class="ring-wrap">
@@ -83,6 +91,7 @@
       <div class="ring-center">
         <div class="time" id="time">25:00</div>
         <div class="mode-label" id="modeLabel">FOCO</div>
+        <div class="ring-lin" aria-hidden="true"><i id="ringLin"></i></div>
       </div>
     </div>
 
@@ -96,8 +105,9 @@
       </button>
     </div>
 
+    <div class="qcount" id="qCounter" hidden></div>
     <div class="cycle" id="cycleDots"></div>
-    <div class="active-task" id="activeTask"></div>
+    <div class="active-task" id="activeTask" role="button" tabindex="0" title="Trocar a tarefa"></div>
     <details class="realtime">
       <summary>Tempo real decorrido</summary>
       <p id="realtime"></p>
@@ -109,7 +119,7 @@
   <section class="panel" id="week" hidden></section>
   <section class="panel" id="reviewsToday" hidden></section>
 
-  <section class="tasks">
+  <section class="tasks" id="tasksSec">
     <div class="section-head">
       <h2>Tarefas</h2>
       <button class="icon-btn sm" id="btnTasksMenu" aria-label="Opções das tarefas">
@@ -122,7 +132,7 @@
 
   <section class="panel dash" id="dash" hidden></section>
 
-  <footer class="foot">Focus v0.9 · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
+  <footer class="foot">Focus v1.0 · <button class="link" id="btnHome">Personalizar tela inicial</button> · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
 </div>
 
 <!-- Atalhos -->
@@ -140,6 +150,7 @@
       <span><kbd>D</kbd></span><span>Áreas, temas e provas</span>
       <span><kbd>C</kbd></span><span>Caderno de erros</span>
       <span><kbd>F</kbd></span><span>Flashcards</span>
+      <span><kbd>Z</kbd></span><span>Modo foco (tela cheia)</span>
       <span><kbd>S</kbd></span><span>Simulados</span>
       <span><kbd>E</kbd></span><span>Estatísticas</span>
       <span><kbd>M</kbd></span><span>Mini-timer (app de desktop)</span>
@@ -384,6 +395,16 @@
     <div class="set-sec">
       <h4>Aparência</h4>
       <div class="theme-grid" id="themeGrid"></div>
+      <div class="fld" style="margin-top:14px"><span>Cor de destaque</span><div class="swatches" id="accentGrid"></div></div>
+      <div class="set-grid">
+        <label class="fld"><span>Números do relógio</span><select data-set="clockFont"><option value="thin">Finos</option><option value="normal">Normais</option><option value="bold">Fortes</option><option value="mono">Digitais (mono)</option></select></label>
+        <label class="fld"><span>Progresso do timer</span><select data-set="ringStyle"><option value="ring">Anel</option><option value="thick">Anel grosso</option><option value="bar">Barra</option><option value="none">Só os números</option></select></label>
+        <label class="fld" id="fontScaleWrap"><span>Tamanho do texto</span><select data-set="fontScale"><option value="0.9">Pequeno</option><option value="1">Normal</option><option value="1.1">Grande</option><option value="1.2">Maior</option><option value="1.35">Enorme</option></select></label>
+      </div>
+      <div class="btn-row"><button class="btn" id="btnHome2">Personalizar tela inicial…</button></div>
+      <h4 style="margin-top:16px">Botões da barra de baixo (celular)</h4>
+      <p class="hint">Os desmarcados ficam no botão "Mais".</p>
+      <div class="switches nav-items" id="navItems"></div>
     </div>
 
     <div class="set-sec">
@@ -400,10 +421,38 @@
         <label class="switch"><input type="checkbox" data-set="autoBreaks"> Iniciar pausas automaticamente</label>
         <label class="switch"><input type="checkbox" data-set="autoPomos"> Iniciar pomodoro após a pausa automaticamente</label>
         <label class="switch"><input type="checkbox" data-set="askQuestions"> Pedir registro de questões ao fim de sessões de tarefas de questões</label>
-        <label class="switch"><input type="checkbox" data-set="sound"> Som ao terminar</label>
+        <label class="switch"><input type="checkbox" data-set="sound"> Som (e vibração) ao terminar</label>
         <label class="switch"><input type="checkbox" data-set="notify"> Notificação do sistema</label>
         <label class="switch" id="wakeWrap" hidden><input type="checkbox" data-set="wakeLock"> Manter a tela ligada enquanto o timer roda</label>
       </div>
+    </div>
+
+    <div class="set-sec">
+      <h4>Timers personalizados</h4>
+      <p class="hint">Aparecem como abas ao lado do Pomodoro. O tempo conta como foco nas estatísticas.</p>
+      <div id="presetList"></div>
+      <form id="presetForm" class="preset-form" novalidate>
+        <input name="plabel" maxlength="24" placeholder="Nome (ex.: Questões)" autocomplete="off" aria-label="Nome do timer">
+        <label class="goal"><input type="number" name="pfocus" min="1" max="240" placeholder="50" aria-label="Minutos de foco"> min foco</label>
+        <label class="goal"><input type="number" name="pbrk" min="1" max="120" placeholder="10" aria-label="Minutos de pausa"> min pausa</label>
+        <button class="btn" type="submit">Criar</button>
+      </form>
+    </div>
+
+    <div class="set-sec">
+      <h4>Alarmes</h4>
+      <div class="set-grid">
+        <label class="fld"><span>Fim do foco</span><select data-set="alarmFocus"><option value="chime">Sininho (3 notas)</option><option value="bell">Sino</option><option value="digital">Digital</option><option value="soft">Suave</option><option value="none">Sem som</option></select></label>
+        <label class="fld"><span>Fim da pausa</span><select data-set="alarmBreak"><option value="chime">Sininho (3 notas)</option><option value="bell">Sino</option><option value="digital">Digital</option><option value="soft">Suave</option><option value="none">Sem som</option></select></label>
+        <label class="fld"><span>Volume do alarme</span><input type="range" min="0" max="100" data-set="alarmVol"></label>
+      </div>
+      <div class="btn-row"><button class="btn" data-test-alarm="focus">Ouvir fim do foco</button><button class="btn" data-test-alarm="break">Ouvir fim da pausa</button></div>
+    </div>
+
+    <div class="set-sec">
+      <h4>Revisões do caderno de erros</h4>
+      <label class="fld" style="max-width:320px"><span>Revisar depois de quantos dias (separe por vírgula)</span><input id="stepsInput" placeholder="1, 7, 30" inputmode="numeric" autocomplete="off"></label>
+      <p class="hint">Ex.: 1, 3, 7, 15, 30. Vale para as próximas revisões agendadas.</p>
     </div>
 
     <div class="set-sec">
@@ -571,6 +620,39 @@
   </form>
 </dialog>
 
+<!-- Personalizar tela inicial -->
+<dialog id="homeDlg" class="dlg mid">
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Personalizar tela inicial</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <h4 class="hp-h">Painéis e ordem</h4>
+    <p class="hint">Marque o que aparece e use as setas para mudar a ordem. Dica: toque ou clique no título de um painel para recolhê-lo.</p>
+    <div id="homePanels" class="hp-list"></div>
+    <h4 class="hp-h">Cartão do timer</h4>
+    <div class="switches" id="homeParts"></div>
+    <h4 class="hp-h">Janela larga (PC maximizado, tablet deitado)</h4>
+    <div class="seg" id="homeLayout">
+      <label><input type="radio" name="layout" value="auto"><span>Duas colunas</span></label>
+      <label><input type="radio" name="layout" value="one"><span>Uma coluna</span></label>
+    </div>
+    <div class="dlg-foot"><button type="button" class="btn" id="homeReset">Voltar ao padrão</button><button type="button" class="btn primary" data-close>Pronto</button></div>
+  </div>
+</dialog>
+
+<!-- Primeiro uso -->
+<dialog id="welcomeDlg" class="dlg">
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Bem-vindo ao Focus</h3><button type="button" class="x" data-wz="skip" aria-label="Fechar">×</button></div>
+    <p class="hint">Três passos rápidos para deixar tudo pronto para a residência:</p>
+    <div class="wz">
+      <div class="wz-step" id="wzTemplate"><b>1</b><div><strong>Áreas e temas</strong><small>As 5 grandes áreas com os temas e a incidência de cada um.</small></div><button class="btn primary sm" data-wz="template">Carregar</button></div>
+      <div class="wz-step"><b>2</b><div><strong>Provas-alvo</strong><small>ENARE, USP, SUS-SP… com a data, para ver o ritmo necessário.</small></div><button class="btn sm" data-wz="exams">Cadastrar</button></div>
+      <div class="wz-step"><b>3</b><div><strong>Ciclo de estudos</strong><small>Horas e questões por semana; o app divide entre as áreas.</small></div><button class="btn sm" data-wz="cycle">Definir</button></div>
+    </div>
+    <p class="hint" style="margin-top:12px">Já usa o Focus em outro aparelho? Conecte a sincronização em Ajustes.</p>
+    <div class="dlg-foot"><button type="button" class="btn" data-wz="skip">Agora não</button></div>
+  </div>
+</dialog>
+
 <datalist id="instList"></datalist>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -591,6 +673,7 @@
 <script src="js/residency.js"></script>
 <script src="js/cards.js"></script>
 <script src="js/cloud.js"></script>
+<script src="js/custom.js"></script>
 <script src="js/dash.js"></script>
 <script src="js/app.js"></script>
 </body>

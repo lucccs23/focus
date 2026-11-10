@@ -28,6 +28,15 @@ Os dados ficam em `%APPDATA%\Foco Lab` (nome antigo do app, mantido para não pe
 ## Funções
 
 - **Timer**: pomodoro, pausas e cronômetro; sessões interrompidas com 1 min ou mais são salvas.
+- **Timers personalizados** (Ajustes): ex.: "Questões" 50/10 ou "Leitura" 90/20, como abas ao lado do Pomodoro.
+- **Contador rápido de questões**: com uma tarefa de questões ativa, toque em Acertei/Errei a cada questão; ao registrar, o total e os acertos já vêm preenchidos.
+- **Modo foco** (`Z`): só o timer, grande, em tela cheia.
+- **Troca rápida de tarefa**: toque em "Trabalhando em…" no cartão do timer.
+- **Personalizar tela inicial** (link no rodapé ou em Ajustes): escolher e ordenar painéis, recolher painéis tocando no título, esconder partes do timer, uma ou duas colunas na tela larga.
+- **Aparência**: cor de destaque, estilo dos números do relógio, anel/anel grosso/barra/só números, tamanho do texto (celular) e botões da barra de baixo do celular.
+- **Alarmes**: sons diferentes para o fim do foco e da pausa, com volume próprio.
+- **Revisões editáveis**: os intervalos do caderno de erros (padrão 1, 7 e 30 dias) podem ser trocados, ex.: 1, 3, 7, 15, 30.
+- **Assistente de início**: na primeira abertura num aparelho sem dados, três passos (áreas, provas e ciclo).
 - **Tarefas** de estudo ou de questões, ligadas a área e tema.
 - **Áreas, temas e metas** (`D`):
   - botão que carrega as **5 grandes áreas da residência** (Clínica Médica, Cirurgia, Pediatria, GO e Preventiva) com os temas e a incidência de cada um;

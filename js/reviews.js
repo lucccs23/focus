@@ -42,15 +42,15 @@ const Reviews = {
   markDone(r) {
     r.stage++;
     r.lastAt = Date.now();
-    if (r.stage >= REVIEW_STEPS.length) { r.done = true; r.doneAt = Date.now(); App.toast('Revisão concluída — saiu do caderno 🎉'); }
+    if (r.stage >= reviewSteps().length) { r.done = true; r.doneAt = Date.now(); App.toast('Revisão concluída — saiu do caderno 🎉'); }
     else {
-      r.due = D.addDays(D.sod(Date.now()), REVIEW_STEPS[r.stage] - REVIEW_STEPS[r.stage - 1]);
+      r.due = D.addDays(D.sod(Date.now()), reviewSteps()[r.stage] - reviewSteps()[r.stage - 1]);
       App.toast(`Próxima revisão em ${D.ddmm(r.due)}`);
     }
     this.changed();
   },
   snooze(r) { r.due = D.addDays(D.sod(Date.now()), 1); App.toast('Adiada para amanhã'); this.changed(); },
-  undo(r) { r.done = false; r.stage = Math.max(0, REVIEW_STEPS.length - 1); r.due = D.sod(Date.now()); this.changed(); },
+  undo(r) { r.done = false; r.stage = Math.max(0, reviewSteps().length - 1); r.due = D.sod(Date.now()); this.changed(); },
   del(r) {
     if (!confirm('Excluir esta anotação do caderno de erros?')) return;
     Store.data.reviews = Store.data.reviews.filter((x) => x.id !== r.id);
@@ -78,7 +78,7 @@ const Reviews = {
     Store.scheduleReview({ subjectId: pick.subjectId, topicId: pick.topicId, wrong, note });
     f.hidden = true;
     this.tab = 'next';
-    App.toast(`Revisão agendada para ${D.ddmm(D.addDays(D.sod(Date.now()), REVIEW_STEPS[0]))}`);
+    App.toast(`Revisão agendada para ${D.ddmm(D.addDays(D.sod(Date.now()), reviewSteps()[0]))}`);
     this.changed();
   },
 
@@ -92,7 +92,7 @@ const Reviews = {
   },
 
   row(r, compact = false) {
-    const steps = REVIEW_STEPS.map((d, i) => `<i class="${i < r.stage || r.done ? 'ok' : i === r.stage ? 'cur' : ''}" title="${d} dia${d === 1 ? '' : 's'}">${d}d</i>`).join('');
+    const steps = reviewSteps().map((d, i) => `<i class="${i < r.stage || r.done ? 'ok' : i === r.stage ? 'cur' : ''}" title="${d} dia${d === 1 ? '' : 's'}">${d}d</i>`).join('');
     const isDue = !r.done && r.due < this.endOfToday();
     return `<div class="rv${isDue ? ' due' : ''}" data-id="${r.id}">
       <div class="rv-main">

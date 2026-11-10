@@ -133,6 +133,6 @@ const Importer = {
     App.renderAll();
     Reviews.tab = 'next';
     Reviews.render();
-    App.toast(`${chosen.length} questão(ões) no caderno · primeira revisão em ${D.ddmm(D.addDays(D.sod(now), REVIEW_STEPS[0]))}`);
+    App.toast(`${chosen.length} questão(ões) no caderno · primeira revisão em ${D.ddmm(D.addDays(D.sod(now), reviewSteps()[0]))}`);
   },
 };

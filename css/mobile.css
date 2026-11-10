@@ -192,3 +192,119 @@ button, .seg label, .switch, summary, .task, .imp-item { touch-action: manipulat
 .fc-keys { text-align: center; margin-top: 8px; font-size: 12px; }
 .fc-empty { text-align: center; padding: 30px 10px; display: grid; gap: 8px; justify-items: center; }
 #cardListWrap[hidden], #cardImportWrap[hidden], #cardStudy[hidden] { display: none; }
+
+/* ============================================================
+   v1.0 — personalização
+   ============================================================ */
+/* "Atacar primeiro": nome do tema inteiro e o detalhe na linha de baixo */
+.weak { grid-template-columns: minmax(0, 1fr) auto; }
+.weak .tag { max-width: 100%; white-space: normal; }
+.weak small { grid-column: 1; grid-row: 2; white-space: normal; }
+.weak .btn { grid-column: 2; grid-row: 1 / span 2; }
+
+/* botão do modo foco (canto esquerdo do cartão do timer) */
+.zen-btn { position: absolute; top: 14px; left: 14px; }
+.zen-btn .zen-out, body.zen .zen-btn .zen-in { display: none; }
+body.zen .zen-btn .zen-out { display: block; }
+@media (max-width: 520px) {
+  .zen-btn { top: 10px; left: 10px; }
+  .mode-tabs { margin-left: 38px; }
+}
+
+/* abas: com timers personalizados, rolam de lado no celular */
+@media (max-width: 640px) {
+  .mode-tabs.many { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; justify-content: flex-start; max-width: calc(100% - 76px); margin-left: 38px; margin-right: 38px; }
+  .mode-tabs.many::-webkit-scrollbar { display: none; }
+  .mode-tabs.many button { flex: none; white-space: nowrap; padding: 7px 10px; }
+}
+
+/* tarefa ativa: toque para trocar */
+.active-task { cursor: pointer; border-radius: 8px; display: inline-block; padding: 3px 10px; }
+.active-task:hover { background: var(--surface-2); }
+.active-task .caret { font-size: 11px; color: var(--dim); }
+.active-task u { text-underline-offset: 2px; color: var(--c-focus); }
+
+/* contador rápido de questões */
+.qcount { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.qcount .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 14px; }
+.qcount .btn span { min-width: 22px; padding: 1px 6px; border-radius: 6px; background: var(--surface-2); font-variant-numeric: tabular-nums; font-weight: 600; }
+.qc-ok b { color: var(--ok); }
+.qc-no b { color: var(--err); }
+.qcount .link { font-size: 13px; }
+@media (hover: none) { .qcount .btn { padding: 11px 18px; font-size: 15px; } }
+
+/* estilo do relógio e do progresso */
+body[data-clock="normal"] .time { font-weight: 400; }
+body[data-clock="bold"] .time { font-weight: 600; letter-spacing: -.03em; }
+body[data-clock="mono"] .time { font-family: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", monospace; font-weight: 400; letter-spacing: -.04em; }
+body[data-ring="thick"] .ring-track, body[data-ring="thick"] .ring-bar { stroke-width: 9; }
+body[data-ring="bar"] .ring, body[data-ring="none"] .ring { opacity: 0; }
+.ring-lin { display: none; width: 70%; height: 6px; margin: 14px auto 0; border-radius: 3px; background: var(--line); overflow: hidden; }
+.ring-lin i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width .3s linear; }
+body[data-ring="bar"] .ring-lin { display: block; }
+
+/* tela inicial: painéis escondidos, recolhidos e partes do timer */
+.home-off { display: none !important; }
+.panel > .panel-head h3, #tasksSec > .section-head h2 { cursor: pointer; user-select: none; }
+.panel > .panel-head h3::after, #tasksSec > .section-head h2::after { content: "\25BE"; display: inline-block; margin-left: 6px; font-size: 11px; color: var(--dim); transition: transform .15s; }
+.collapsed > .panel-head h3::after, #tasksSec.collapsed > .section-head h2::after { transform: rotate(-90deg); }
+.panel.collapsed > :not(.panel-head), #tasksSec.collapsed > :not(.section-head) { display: none !important; }
+.panel.collapsed > .panel-head { margin-bottom: 0; }
+body.no-tabs #modeTabs, body.no-dots #cycleDots, body.no-task #activeTask, body.no-realtime .realtime, body.no-counter #qCounter { display: none !important; }
+body.no-tabs .ring-wrap { margin-top: 40px; }
+
+/* barra do celular: itens escondidos vão para "Mais" */
+@media (max-width: 640px) { .top-actions .nav-off { display: none !important; } }
+@media (min-width: 641px) { #btnMore { display: none !important; } }
+
+/* uma coluna mesmo com a janela larga */
+@media (min-width: 1100px), (min-width: 900px) and (pointer: coarse) {
+  body.one-col .app { display: block; max-width: 680px; }
+  body.one-col .timer-card { position: static; min-height: 0; display: block; padding: 20px 20px 18px; }
+  body.one-col .timer-card .ring-wrap { margin: 26px auto 18px !important; width: min(280px, 72vw); min-width: 0; }
+  body.one-col .time { font-size: clamp(52px, 13vw, 74px); }
+  body.one-col .today { margin: 14px 0 30px; }
+  body.one-col .panel { margin: -16px 0 30px; }
+  body.one-col #dash { margin: 16px 0 0; }
+}
+
+/* modo foco: só o timer, grande */
+body.zen .topbar, body.zen .today, body.zen .panel, body.zen .tasks, body.zen .foot, body.zen .top-actions, body.zen .realtime { display: none !important; }
+body.zen .app { display: flex !important; align-items: center; justify-content: center; max-width: none; min-height: 100vh; min-height: 100dvh; padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+body.zen .timer-card { position: relative !important; width: min(760px, 100%); min-height: 0 !important; border: 0; box-shadow: none; background: transparent; display: flex; flex-direction: column; }
+body.zen .ring-wrap { width: min(560px, 78vw, calc(100vh - 290px), calc(100dvh - 290px)) !important; min-width: 220px; margin: 22px auto 18px !important; }
+body.zen .time { font-size: clamp(64px, calc(min(560px, 78vw, calc(100vh - 290px)) * .25), 140px) !important; }
+body.zen .sound-btn, body.zen .zen-btn { position: fixed; top: max(14px, env(safe-area-inset-top)); }
+body.zen .zen-btn { left: max(14px, env(safe-area-inset-left)); }
+body.zen .sound-btn { right: max(14px, env(safe-area-inset-right)); }
+body.zen .mode-tabs { margin-left: 0; margin-right: 0; }
+
+/* configurações: cor de destaque, timers, barra */
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line-strong); padding: 0; cursor: pointer; font-size: 10px; color: var(--muted); background: var(--surface-2); display: grid; place-items: center; position: relative; overflow: hidden; }
+.swatch.on { box-shadow: 0 0 0 2px var(--text); }
+.swatch.custom { background: conic-gradient(#d14b4b, #c9a227, #5b8a6b, #3f7cc4, #6b5cc4, #b5566e, #d14b4b); color: #fff; font-size: 16px; font-weight: 700; }
+.swatch.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.preset { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.preset .muted { font-size: 12.5px; }
+.preset-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.preset-form input[name=plabel] { flex: 1 1 160px; width: auto; }
+.preset-form .goal input { width: 70px; }
+.nav-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+
+/* personalizar tela inicial */
+.hp-h { margin: 16px 0 8px; font-size: 13.5px; font-weight: 600; }
+.hp-h:first-of-type { margin-top: 0; }
+.hp-list { display: grid; gap: 6px; }
+.hp-row { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.hp-row .switch { margin: 0; }
+.hp-row .kebab:disabled { opacity: .3; cursor: default; }
+#homeParts { display: grid; gap: 4px; }
+
+/* assistente de início */
+.wz { display: grid; gap: 8px; }
+.wz-step { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.wz-step > b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--c-focus); font-size: 13px; }
+.wz-step strong { display: block; font-size: 14px; }
+.wz-step small { color: var(--muted); font-size: 12.5px; }
+.wz-step.done > b { background: var(--ok); color: #fff; }

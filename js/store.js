@@ -52,12 +52,17 @@ const D = {
 /* ---------- armazenamento ---------- */
 const STORE_KEY = 'focolab.v1';
 const PALETTE = ['#c4623f', '#5b8a6b', '#4f6d8f', '#a5772c', '#8a5a8c', '#3f8a8a', '#b5566e', '#6b7a3a', '#7d7a74'];
-const REVIEW_STEPS = [1, 7, 30]; // dias após o registro dos erros
+const DEFAULT_REVIEW_STEPS = [1, 7, 30]; // dias após o registro dos erros (editável em Ajustes)
+const reviewSteps = () => { const v = Store.data?.settings?.reviewSteps; return Array.isArray(v) && v.length ? v : DEFAULT_REVIEW_STEPS; };
 // preferências que valem só para este computador (não são sincronizadas)
-const LOCAL_SETTINGS = ['closeToTray', 'autoBackup', 'backupDir', 'lastBackupKey', 'lastBackupAt', 'syncOn', 'syncDir', 'deviceId', 'lastSyncAt', 'lastCheckAt', 'syncSeenAt', 'syncSeenRev', 'syncError', 'wakeLock', 'cloudToken', 'cloudGistId'];
+const LOCAL_SETTINGS = ['closeToTray', 'autoBackup', 'backupDir', 'lastBackupKey', 'lastBackupAt', 'syncOn', 'syncDir', 'deviceId', 'lastSyncAt', 'lastCheckAt', 'syncSeenAt', 'syncSeenRev', 'syncError', 'wakeLock', 'cloudToken', 'cloudGistId',
+  'accent', 'clockFont', 'ringStyle', 'fontScale', 'alarmFocus', 'alarmBreak', 'alarmVol', 'navHidden', 'home', 'onboardDone'];
 const DEFAULT_SETTINGS = {
   theme: 'system', wakeLock: true,
   dailyGoalQ: 0, exams: [], weeklyH: 0, weeklyQ: 0, cloudToken: '', cloudGistId: '',
+  presets: [], reviewSteps: [1, 7, 30],
+  accent: '', clockFont: 'thin', ringStyle: 'ring', fontScale: 1, alarmFocus: 'chime', alarmBreak: 'soft', alarmVol: 60,
+  navHidden: [], home: null, onboardDone: false,
   syncOn: false, syncDir: '', deviceId: '', lastSyncAt: 0, syncSeenAt: 0,
   bgSound: 'none', bgVolume: 35, bgOnlyFocus: true,
   closeToTray: false, autoBackup: false, backupDir: '', lastBackupKey: '',
@@ -71,7 +76,7 @@ const Store = {
 
   fresh() {
     return {
-      version: 2, settings: { ...DEFAULT_SETTINGS }, subjects: [], tasks: [], activeTaskId: null,
+      version: 2, settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), subjects: [], tasks: [], activeTaskId: null,
       sessions: [], questions: [], reviews: [], simulados: [], cards: [], timer: null,
     };
   },
@@ -88,7 +93,7 @@ const Store = {
     };
     // matérias: assuntos (tópicos do edital) e metas semanais
     out.subjects.forEach((s) => { s.topics = arr(s.topics); s.goalH = +s.goalH || 0; s.goalQ = +s.goalQ || 0; s.weight = +s.weight || 1; s.diff = +s.diff || 2; });
-    if (!Array.isArray(out.settings.exams)) out.settings.exams = [];
+    ['exams', 'presets', 'navHidden'].forEach((k) => { if (!Array.isArray(out.settings[k])) out.settings[k] = []; });
     return out;
   },
 
@@ -172,7 +177,7 @@ const Store = {
   // Agenda revisões (1, 7 e 30 dias) para os erros de um registro de questões.
   scheduleReview({ subjectId, topicId, wrong, note = '', from = Date.now(), qId = null }) {
     if (!(wrong > 0) && !note) return null;
-    const r = { id: uid(), subjectId: subjectId || null, topicId: topicId || null, wrong: wrong || 0, note, createdAt: from, stage: 0, due: D.addDays(D.sod(from), REVIEW_STEPS[0]), done: false, qId };
+    const r = { id: uid(), subjectId: subjectId || null, topicId: topicId || null, wrong: wrong || 0, note, createdAt: from, stage: 0, due: D.addDays(D.sod(from), reviewSteps()[0]), done: false, qId };
     this.data.reviews.push(r);
     return r;
   },
@@ -226,10 +231,10 @@ const Store = {
     // revisões antigas: avança o estágio como se tivessem sido feitas em dia
     this.data.reviews.forEach((r) => {
       if (!r.demo) return;
-      while (r.stage < REVIEW_STEPS.length && r.due < D.addDays(today, -1) && Math.random() < 0.8) {
+      while (r.stage < reviewSteps().length && r.due < D.addDays(today, -1) && Math.random() < 0.8) {
         r.stage++;
-        if (r.stage >= REVIEW_STEPS.length) { r.done = true; break; }
-        r.due = D.addDays(D.sod(r.createdAt), REVIEW_STEPS[r.stage]);
+        if (r.stage >= reviewSteps().length) { r.done = true; break; }
+        r.due = D.addDays(D.sod(r.createdAt), reviewSteps()[r.stage]);
       }
     });
     // simulados a cada ~2 semanas
