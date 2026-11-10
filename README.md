@@ -11,11 +11,15 @@ Se a pasta `node_modules` sumir (ex.: projeto copiado para outro PC):
 ```bash
 npm install
 node node_modules/electron/install.js
+npm run runtime
+npm run shortcuts
 ```
+
+`npm run runtime` cria `runtime/Focus.exe`: o Electron com nome, ícone e versão do Focus (é o que aparece na barra de tarefas). `npm run shortcuts` recria os atalhos "Focus" apontando para ele.
 
 Para recompilar o `Focus.exe` (só se mexer em `build/launcher.cs`): `build\make-launcher.cmd`.
 
-**Instalador final:** `dist/Focus Setup 0.6.0.exe` instala o app como um programa comum (atalho "Focus"). Ele usa os mesmos dados do `Focus.exe` da pasta, mas só um dos dois abre por vez.
+**Instalador final:** `dist/Focus Setup 0.7.0.exe` instala o app como um programa comum (atalho "Focus"). Ele usa os mesmos dados do `Focus.exe` da pasta, mas só um dos dois abre por vez.
 
 **Celular e tablet:** publicado no GitHub Pages, o app abre no navegador do celular e pode ser instalado em "Adicionar à tela inicial" (funciona offline). Os dados do celular ficam no celular; para levar dados entre PC e celular, use Ajustes → Exportar/Importar backup. Ao publicar uma versão nova, aumente `VERSION` em `sw.js`.
 
@@ -42,7 +46,8 @@ Os dados ficam em `%APPDATA%\Foco Lab` (nome antigo do app, mantido para não pe
 
 | Arquivo | O que faz |
 |---|---|
-| `Focus.exe` | Lançador: abre o Electron apontando para esta pasta |
+| `Focus.exe` | Lançador: abre `runtime/Focus.exe` (ou, se não existir, o Electron apontando para esta pasta) |
+| `runtime/` | Electron com a identidade do Focus, gerado por `npm run runtime` (fora do Git) |
 | `index.html` | Layout e diálogos |
 | `css/style.css`, `css/features.css` | Visual minimalista, claro/escuro |
 | `js/store.js` | Utilidades, datas, persistência, assuntos, revisões, dados de exemplo |

@@ -7,7 +7,9 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "runtime": "node build/make-runtime.js",
+    "shortcuts": "electron build/make-shortcuts.js"
   },
   "build": {
     "appId": "com.focus.app",

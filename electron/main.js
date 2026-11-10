@@ -18,16 +18,18 @@ let prefs = { closeToTray: false };
 let trayHintShown = false;
 const failedShortcuts = [];
 
-// segunda cópia aberta: só traz a primeira para frente (ver 'second-instance') e encerra
+// O app se chamava "Foco Lab": continua usando a mesma pasta de dados para nada se perder.
+// (Só troca se ninguém definiu outra pasta antes — ex.: os testes automatizados.)
+// FOCUS_USER_DATA: pasta de dados separada (usada nos testes, sem mexer nos dados reais).
+if (process.env.FOCUS_USER_DATA) app.setPath('userData', process.env.FOCUS_USER_DATA);
+else if (app.getPath('userData') === path.join(app.getPath('appData'), app.getName())) {
+  app.setPath('userData', path.join(app.getPath('appData'), 'Foco Lab'));
+}
+
+// segunda cópia aberta (com os mesmos dados): só traz a primeira para frente e encerra
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 app.setAppUserModelId('com.focus.app'); // necessário para notificações no Windows
-
-// O app se chamava "Foco Lab": continua usando a mesma pasta de dados para nada se perder.
-// (Só troca se ninguém definiu outra pasta antes — ex.: os testes automatizados.)
-if (app.getPath('userData') === path.join(app.getPath('appData'), app.getName())) {
-  app.setPath('userData', path.join(app.getPath('appData'), 'Foco Lab'));
-}
 
 /* ---------- preferências da janela (posição, tamanho, mini aberto) ---------- */
 const cfgPath = () => path.join(app.getPath('userData'), 'window.json');
