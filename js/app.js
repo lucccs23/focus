@@ -38,6 +38,7 @@ const App = {
     Sims.init();
     Report.init();
     Importer.init();
+    Dash.init();
     Settings.bind();
     Timer.init();
     this.bind();
@@ -244,6 +245,7 @@ const App = {
     this.renderToday();
     Week.render();
     Reviews.renderPanel();
+    Dash.render();
     Store.save();
     if (Stats.isOpen()) Stats.render();
     if (Subjects.isOpen()) Subjects.render();

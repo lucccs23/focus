@@ -69,11 +69,18 @@ button, .seg label, .switch, summary, .task, .imp-item { touch-action: manipulat
   .app { max-width: 1320px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
   .topbar, .foot { grid-column: 1 / -1; }
   .timer-card { grid-column: 1; grid-row: 2 / span 5; position: sticky; top: max(20px, env(safe-area-inset-top)); }
-  .today, #week, #reviewsToday, .tasks { grid-column: 2; }
+  .today, #week, #reviewsToday, .tasks, #dash { grid-column: 2; }
+  #dash { margin: 16px 0 0; }
   .today { margin: 0 0 16px; }
   .panel { margin: 0 0 16px; }
-  .ring-wrap { width: min(340px, 30vw); }
-  .timer-card { padding-top: 22px; padding-bottom: 26px; }
+  /* o timer ocupa a altura da janela e o anel cresce junto */
+  .timer-card { min-height: calc(100vh - 150px); display: flex; flex-direction: column; padding: 22px 24px 28px; }
+  .timer-card .mode-tabs { align-self: center; }
+  /* abas no topo; anel, controles e textos centralizados no espaço que sobra */
+  .timer-card .ring-wrap { margin-top: auto !important; }
+  .timer-card .realtime { margin-bottom: auto; }
+  .ring-wrap { width: min(440px, 30vw, calc(100vh - 430px)); min-width: 260px; margin: 28px auto 22px; }
+  .time { font-size: clamp(64px, calc(min(440px, 30vw, calc(100vh - 430px)) * .25), 112px); }
 }
 
 /* ---------- aviso de nova versão (app instalado) ---------- */
@@ -85,3 +92,14 @@ button, .seg label, .switch, summary, .task, .imp-item { touch-action: manipulat
 }
 .upd .btn { border: 0; }
 #installSec[hidden] { display: none; }
+
+/* ---------- resumo da tela inicial (tela larga) ---------- */
+.dash-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.dk { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); min-width: 0; }
+.dk .l { font-size: 12px; color: var(--muted); }
+.dk .v { font-size: 20px; font-weight: 600; margin: 2px 0 1px; font-variant-numeric: tabular-nums; }
+.dk .s { font-size: 11.5px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-chart { margin: 4px 0 0; min-height: 0; background: var(--bg); }
+.dash-h { margin-top: 16px; }
+.dash-heat .heat { width: 100%; height: auto; }
+.dash-heat .heat-foot { margin-top: 8px; }
