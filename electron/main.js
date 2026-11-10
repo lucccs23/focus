@@ -18,7 +18,9 @@ let prefs = { closeToTray: false };
 let trayHintShown = false;
 const failedShortcuts = [];
 
-if (!app.requestSingleInstanceLock()) app.quit();
+// segunda cópia aberta: só traz a primeira para frente (ver 'second-instance') e encerra
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) app.quit();
 app.setAppUserModelId('com.focus.app'); // necessário para notificações no Windows
 
 // O app se chamava "Foco Lab": continua usando a mesma pasta de dados para nada se perder.
@@ -78,6 +80,8 @@ function createMain() {
   });
 
   main.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
+  // arrastar um arquivo para a janela não pode trocar o app por ele
+  main.webContents.on('will-navigate', (e) => e.preventDefault());
   main.webContents.on('before-input-event', (e, input) => {
     if (input.type !== 'keyDown') return;
     if (input.key === 'F12') main.webContents.toggleDevTools();
@@ -143,6 +147,7 @@ function toggleMini(force) {
   });
   mini.setAlwaysOnTop(true, 'floating');
   mini.loadFile(path.join(ROOT, 'mini.html'));
+  mini.webContents.on('will-navigate', (e) => e.preventDefault());
   mini.once('ready-to-show', () => mini.showInactive());
   mini.webContents.on('did-finish-load', () => { if (lastState) mini.webContents.send('state', lastState); });
   mini.on('moved', () => { const [mx, my] = mini.getPosition(); writeCfg({ miniX: mx, miniY: my }); });
@@ -310,6 +315,7 @@ ipcMain.on('attention', () => { if (main && !main.isFocused()) main.flashFrame(t
 /* ---------- ciclo de vida ---------- */
 app.on('second-instance', showMain);
 app.whenReady().then(() => {
+  if (!gotLock) return;
   createMain();
   createTray();
   registerShortcuts();

@@ -41,30 +41,39 @@ const Sync = {
   async run({ manual = false } = {}) {
     if (!this.enabled() || this._busy) return;
     this._busy = true;
-    const s = Store.data.settings;
+    let s = Store.data.settings;
     try {
       const res = await window.desktop.syncRead(s.syncDir);
       if (!res.ok) throw new Error(res.error);
       let remote = null;
       if (res.json) { try { remote = JSON.parse(res.json); } catch { throw new Error('o arquivo da nuvem está corrompido'); } }
 
-      const remoteNew = remote && remote.deviceId !== s.deviceId && (remote.updatedAt || 0) > (s.syncSeenAt || 0);
+      // versão nova = código de versão diferente do último visto (não depende do relógio dos computadores)
+      const remoteNew = remote && remote.deviceId !== s.deviceId
+        && (remote.rev ? remote.rev !== s.syncSeenRev : (remote.updatedAt || 0) > (s.syncSeenAt || 0));
       if (remoteNew) {
-        if (this.dirty()) {
+        const merged = this.dirty();
+        if (merged) {
           this.apply(this.merge(Store.data, remote), { keepDirty: true });
           if (manual) App.toast('Dados dos dois computadores foram combinados');
         } else {
           this.apply(remote, { keepDirty: false });
           App.toast('Dados atualizados com o outro computador');
         }
+        s = Store.data.settings; // apply() troca o objeto de preferências
         s.syncSeenAt = remote.updatedAt || Date.now();
+        s.syncSeenRev = remote.rev || '';
+        // dados recebidos sem mudanças locais: não precisa devolvê-los para a nuvem
+        if (!merged) s.lastSyncAt = Store.data.updatedAt;
       }
       if (this.dirty() || !remote) await this.push();
-      s.lastSyncAt = Math.max(s.lastSyncAt || 0, Date.now());
+      s = Store.data.settings;
+      s.lastCheckAt = Date.now();
       s.syncError = '';
       Store.save();
       if (manual) App.toast('Sincronizado');
     } catch (e) {
+      s = Store.data.settings;
       s.syncError = e.message || String(e);
       Store.save();
       if (manual) App.toast(`Falha ao sincronizar: ${s.syncError}`);
@@ -77,11 +86,15 @@ const Sync = {
   async push() {
     const s = Store.data.settings;
     if (!Store.data.updatedAt) Store.data.updatedAt = Date.now();
-    const payload = { ...Store.shared(), app: 'focus', deviceId: s.deviceId, updatedAt: Store.data.updatedAt };
+    // guarda QUAL versão foi enviada: o que mudar durante o envio continua pendente
+    const at = Store.data.updatedAt;
+    const rev = uid();
+    const payload = { ...Store.shared(), app: 'focus', deviceId: s.deviceId, updatedAt: at, rev };
     const res = await window.desktop.syncWrite(s.syncDir, JSON.stringify(payload));
     if (!res.ok) throw new Error(res.error);
-    s.syncSeenAt = Store.data.updatedAt;
-    s.lastSyncAt = Date.now();
+    s.syncSeenAt = at;
+    s.syncSeenRev = rev;
+    s.lastSyncAt = at;
   },
 
   // Troca os dados compartilháveis pelos recebidos, mantendo o que é deste computador.
@@ -97,7 +110,9 @@ const Sync = {
     });
     delete next.deviceId;
     delete next.app;
-    next.updatedAt = keepDirty ? Date.now() : (incoming.updatedAt || local.updatedAt);
+    delete next.rev;
+    // sempre pelo relógio DESTE aparelho (o do outro pode estar adiantado ou atrasado)
+    next.updatedAt = Date.now();
     Store.data = next;
     Store.resetBaseline();
     if (!Store.task(next.activeTaskId)) next.activeTaskId = null;
@@ -130,6 +145,6 @@ const Sync = {
     if (!s.syncDir) return 'Nenhuma pasta escolhida.';
     if (!s.syncOn) return `${s.syncDir} · desligada`;
     if (s.syncError) return `${s.syncDir} · erro: ${s.syncError}`;
-    return `${s.syncDir}${s.lastSyncAt ? ` · última: ${D.ddmmyy(s.lastSyncAt)} ${Fmt.time(s.lastSyncAt)}` : ''}`;
+    return `${s.syncDir}${s.lastCheckAt ? ` · última: ${D.ddmmyy(s.lastCheckAt)} ${Fmt.time(s.lastCheckAt)}` : ''}`;
   },
 };

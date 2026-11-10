@@ -75,7 +75,7 @@ const Charts = {
       + '<div class="tip" hidden></div>';
 
     const tip = el.querySelector('.tip');
-    el.onmousemove = (e) => {
+    el.onpointermove = el.onpointerdown = (e) => {
       const h = e.target.closest && e.target.closest('.hit');
       if (!h || o.empty) { tip.hidden = true; return; }
       const i = +h.dataset.i;
@@ -86,6 +86,6 @@ const Charts = {
       tip.style.left = Math.min(W - half, Math.max(half, x)) + 'px';
       tip.style.top = Math.max(tip.offsetHeight + 4, yb - (ph * tot[i]) / max - 10) + 'px';
     };
-    el.onmouseleave = () => { tip.hidden = true; };
+    el.onpointerleave = (e) => { if (e.pointerType === 'mouse') tip.hidden = true; };
   },
 };

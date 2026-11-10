@@ -51,9 +51,9 @@ const STORE_KEY = 'focolab.v1';
 const PALETTE = ['#c4623f', '#5b8a6b', '#4f6d8f', '#a5772c', '#8a5a8c', '#3f8a8a', '#b5566e', '#6b7a3a', '#7d7a74'];
 const REVIEW_STEPS = [1, 7, 30]; // dias após o registro dos erros
 // preferências que valem só para este computador (não são sincronizadas)
-const LOCAL_SETTINGS = ['closeToTray', 'autoBackup', 'backupDir', 'lastBackupKey', 'lastBackupAt', 'syncOn', 'syncDir', 'deviceId', 'lastSyncAt', 'syncSeenAt', 'syncError'];
+const LOCAL_SETTINGS = ['closeToTray', 'autoBackup', 'backupDir', 'lastBackupKey', 'lastBackupAt', 'syncOn', 'syncDir', 'deviceId', 'lastSyncAt', 'lastCheckAt', 'syncSeenAt', 'syncSeenRev', 'syncError', 'wakeLock'];
 const DEFAULT_SETTINGS = {
-  theme: 'system',
+  theme: 'system', wakeLock: true,
   syncOn: false, syncDir: '', deviceId: '', lastSyncAt: 0, syncSeenAt: 0,
   bgSound: 'none', bgVolume: 35, bgOnlyFocus: true,
   closeToTray: false, autoBackup: false, backupDir: '', lastBackupKey: '',

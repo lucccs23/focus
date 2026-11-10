@@ -34,8 +34,10 @@ const Report = {
     if (!w) { App.toast('O navegador bloqueou a janela do relatório'); return; }
     w.document.write(html);
     w.document.close();
-    w.onload = () => w.print();
-    setTimeout(() => { try { w.print(); } catch (_) { /* ignora */ } }, 600);
+    let printed = false;
+    const go = () => { if (printed) return; printed = true; try { w.focus(); w.print(); } catch (_) { /* ignora */ } };
+    w.onload = go;
+    setTimeout(go, 600);
     $('#repDlg').close();
   },
 

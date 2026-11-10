@@ -201,3 +201,10 @@ p.empty { margin: 0; }
   .hmain { flex-basis: calc(100% - 90px); }
   .rev-tools select { flex: 1; min-width: 0; }
 }
+
+/* ---------- v0.7: cabeçalho fixo nos diálogos longos ---------- */
+.dlg-head { position: sticky; top: 0; z-index: 3; background: var(--surface); margin: -18px -22px 8px; padding: 18px 22px 10px; }
+dialog.wide .dlg-head { background: var(--bg); }
+@media (max-width: 520px) {
+  .dlg-head { margin: -14px -14px 4px; padding: 14px 14px 8px; }
+}

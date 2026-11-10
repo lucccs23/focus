@@ -209,6 +209,8 @@ const Stats = {
 
     this._B = r.B;
     this.drawCharts(r.B);
+    const hw = $('#statsBody .heat-wrap');
+    if (hw) hw.scrollLeft = hw.scrollWidth;
   },
 
   heatmap() {

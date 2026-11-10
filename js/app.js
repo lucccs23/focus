@@ -82,7 +82,11 @@ const App = {
 
     // fechar diálogos: botões [data-close] e clique no fundo
     document.addEventListener('click', (e) => { const c = e.target.closest('[data-close]'); if (c) c.closest('dialog')?.close(); });
-    $$('dialog').forEach((d) => d.addEventListener('mousedown', (e) => { if (e.target === d) d.close(); }));
+    $$('dialog').forEach((d) => d.addEventListener('mousedown', (e) => {
+      if (e.target !== d) return;
+      const r = d.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
+    }));
 
     const tf = $('#taskForm');
     Pick.bind(tf);
@@ -95,6 +99,8 @@ const App = {
     qf.onsubmit = (e) => { e.preventDefault(); this.saveQuestions(); };
 
     document.addEventListener('keydown', (e) => this.onKey(e));
+    window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => this.applyTheme());
+    document.addEventListener('visibilitychange', () => this.syncWakeLock());
     window.addEventListener('resize', () => this.closeMenu());
   },
 
@@ -176,11 +182,36 @@ const App = {
     this.beep();
     window.desktop?.attention();
     const st = Store.data.settings;
-    if (st.notify && 'Notification' in window && Notification.permission === 'granted') {
-      try { new Notification('Focus', { body: msg, silent: true }); } catch (_) { /* ignore */ }
-    }
+    if (st.notify && 'Notification' in window && Notification.permission === 'granted') this.notify(msg);
     const t = Store.activeTask();
     if (wasMode === 'pomodoro' && t?.type === 'questoes' && st.askQuestions) this.openQ({ taskId: t.id });
+  },
+
+  notify(msg) {
+    const opts = { body: msg, icon: 'icons/icon-192.png', tag: 'focus-timer', silent: true };
+    // celular (Android): new Notification() não é permitido, só pelo service worker
+    if (!window.desktop && navigator.serviceWorker?.controller) {
+      navigator.serviceWorker.ready.then((r) => r.showNotification('Focus', opts)).catch(() => {});
+      return;
+    }
+    try { new Notification('Focus', opts); } catch (_) { /* sem notificação */ }
+  },
+
+  // Celular/tablet: mantém a tela ligada enquanto o timer roda (senão o aparelho dorme e o alarme atrasa).
+  syncWakeLock() {
+    if (window.desktop || !navigator.wakeLock) return;
+    const want = !!Store.data.settings.wakeLock && Timer.running && document.visibilityState === 'visible';
+    if (want && !this._wake && !this._wakeBusy && Date.now() - (this._wakeFailAt || 0) > 15000) {
+      this._wakeBusy = true;
+      navigator.wakeLock.request('screen')
+        .then((w) => { this._wake = w; w.addEventListener('release', () => { if (this._wake === w) this._wake = null; }); })
+        .catch(() => { this._wakeFailAt = Date.now(); })
+        .finally(() => { this._wakeBusy = false; });
+    } else if (!want && this._wake) {
+      const w = this._wake;
+      this._wake = null;
+      w.release().catch(() => {});
+    }
   },
 
   /* ---------- renderização ---------- */
@@ -244,6 +275,7 @@ const App = {
     const title = started ? `${txt} - ${running ? (def.focus ? 'Focado' : def.label) : 'Pausado'}` : 'Focus';
     if (document.title !== title) document.title = title;
     this.sendDesktopState();
+    this.syncWakeLock();
   },
 
   renderToday() {
@@ -588,6 +620,10 @@ const Settings = {
     });
     $('#btnDemo').textContent = Store.hasDemo() ? 'Remover dados de exemplo' : 'Carregar dados de exemplo';
     $('#desktopSec').hidden = !window.desktop;
+    $('#wakeWrap').hidden = !!window.desktop || !navigator.wakeLock;
+    $('#dataHint').textContent = window.desktop
+      ? 'Tudo fica salvo neste computador. Exporte um backup de vez em quando.'
+      : 'Tudo fica salvo neste aparelho (celular e computador têm dados separados). Para levar seus dados de um para o outro, exporte o backup aqui e importe lá.';
     if (window.desktop) {
       this.fillBackup();
       this.fillSync();
@@ -643,7 +679,10 @@ const Settings = {
     };
     $('#btnClear').onclick = () => {
       if (!confirm('Apagar TODOS os dados (tarefas, sessões, questões, simulados, revisões e configurações)?\nIsso não pode ser desfeito. Considere exportar um backup antes.')) return;
+      const deviceId = Store.data.settings.deviceId;
       Store.data = Store.fresh();
+      Store.data.settings.deviceId = deviceId;
+      window.desktop?.setPrefs?.({ closeToTray: false });
       Timer.init();
       this.fill();
       App.renderAll();
@@ -707,12 +746,21 @@ const Settings = {
     Notification.requestPermission().then((p) => { if (p !== 'granted') deny('Permissão de notificação negada'); });
   },
 
-  exportData() {
+  async exportData() {
     const data = { ...Store.data, exportedAt: new Date().toISOString() };
+    const name = `focus-backup-${D.key(Date.now())}.json`;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const touch = window.matchMedia?.('(hover: none)').matches;
+    if (!window.desktop && touch && typeof File === 'function') {
+      const file = new File([blob], name, { type: 'application/json' });
+      if (navigator.canShare?.({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: 'Backup do Focus' }); return; }
+        catch (e) { if (e.name === 'AbortError') return; } // se falhar, baixa o arquivo
+      }
+    }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `focus-backup-${D.key(Date.now())}.json`;
+    a.download = name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   },
@@ -724,7 +772,13 @@ const Settings = {
       if (!d || !Array.isArray(d.tasks) || !Array.isArray(d.sessions)) throw new Error('formato');
       if (!confirm(`Substituir os dados atuais pelo backup?\n${d.tasks.length} tarefas · ${d.sessions.length} sessões · ${(d.questions || []).length} registros de questões`)) return;
       delete d.exportedAt;
+      const cur = Store.data;
+      const keep = {};
+      LOCAL_SETTINGS.forEach((k) => { if (cur.settings[k] !== undefined) keep[k] = cur.settings[k]; });
+      d.settings = { ...(d.settings || {}), ...keep };
+      d.timer = cur.timer;
       Store.data = Store.normalize(d);
+      if (!Store.task(Store.data.activeTaskId)) Store.data.activeTaskId = null;
       Timer.init();
       App.applyTheme();
       this.fill();

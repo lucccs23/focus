@@ -1,7 +1,7 @@
 'use strict';
 // Service worker da versão de celular: guarda o app no aparelho para abrir sem internet.
 // Ao publicar uma versão nova, mude VERSION para os aparelhos baixarem tudo de novo.
-const VERSION = 'focus-0.6.0';
+const VERSION = 'focus-0.7.0';
 const FILES = [
   './', './index.html', './manifest.webmanifest',
   './css/style.css', './css/features.css', './css/themes.css',
@@ -30,5 +30,14 @@ self.addEventListener('fetch', (e) => {
     const hit = await cache.match(req, { ignoreSearch: true });
     const net = fetch(req).then((res) => { if (res.ok) cache.put(req, res.clone()); return res; }).catch(() => null);
     return hit || (await net) || (req.mode === 'navigate' ? cache.match('./index.html') : Response.error());
+  }));
+});
+
+// tocar na notificação do timer abre o app
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    const c = list[0];
+    return c ? c.focus() : self.clients.openWindow('./');
   }));
 });

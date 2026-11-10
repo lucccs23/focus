@@ -113,7 +113,7 @@
     <button class="add-task" id="btnAddTask">+ Adicionar tarefa</button>
   </section>
 
-  <footer class="foot">Focus v0.6 · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
+  <footer class="foot">Focus v0.7 · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
 </div>
 
 <!-- Atalhos -->
@@ -360,6 +360,7 @@
         <label class="switch"><input type="checkbox" data-set="askQuestions"> Pedir registro de questões ao fim de sessões de tarefas de questões</label>
         <label class="switch"><input type="checkbox" data-set="sound"> Som ao terminar</label>
         <label class="switch"><input type="checkbox" data-set="notify"> Notificação do sistema</label>
+        <label class="switch" id="wakeWrap" hidden><input type="checkbox" data-set="wakeLock"> Manter a tela ligada enquanto o timer roda</label>
       </div>
     </div>
 
@@ -421,7 +422,7 @@
 
     <div class="set-sec">
       <h4>Dados</h4>
-      <p class="hint">Tudo fica salvo neste computador. Exporte um backup de vez em quando.</p>
+      <p class="hint" id="dataHint">Tudo fica salvo neste computador. Exporte um backup de vez em quando.</p>
       <div class="btn-row">
         <button class="btn" id="btnExport">Exportar backup</button>
         <button class="btn" id="btnImport">Importar backup</button>

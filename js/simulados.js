@@ -71,7 +71,8 @@ const Sims = {
       bySid.get(k)[i.dataset.k] = i.value === '' ? null : Math.round(+i.value);
     });
     for (const [sid, v] of bySid) {
-      if (!v.total) continue;
+      if (v.total < 0 || v.correct < 0) return err(`Em ${Store.subjectName(sid)}, use números positivos.`);
+      if (!v.total) { if (v.correct) return err(`Em ${Store.subjectName(sid)}, informe também o total de questões.`); continue; }
       const correct = v.correct ?? 0;
       if (correct > v.total) return err(`Em ${Store.subjectName(sid)}, os acertos passam do total.`);
       rows.push({ subjectId: sid || null, total: v.total, correct });
