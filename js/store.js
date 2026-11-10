@@ -54,9 +54,10 @@ const STORE_KEY = 'focolab.v1';
 const PALETTE = ['#c4623f', '#5b8a6b', '#4f6d8f', '#a5772c', '#8a5a8c', '#3f8a8a', '#b5566e', '#6b7a3a', '#7d7a74'];
 const REVIEW_STEPS = [1, 7, 30]; // dias após o registro dos erros
 // preferências que valem só para este computador (não são sincronizadas)
-const LOCAL_SETTINGS = ['closeToTray', 'autoBackup', 'backupDir', 'lastBackupKey', 'lastBackupAt', 'syncOn', 'syncDir', 'deviceId', 'lastSyncAt', 'lastCheckAt', 'syncSeenAt', 'syncSeenRev', 'syncError', 'wakeLock'];
+const LOCAL_SETTINGS = ['closeToTray', 'autoBackup', 'backupDir', 'lastBackupKey', 'lastBackupAt', 'syncOn', 'syncDir', 'deviceId', 'lastSyncAt', 'lastCheckAt', 'syncSeenAt', 'syncSeenRev', 'syncError', 'wakeLock', 'cloudToken', 'cloudGistId'];
 const DEFAULT_SETTINGS = {
   theme: 'system', wakeLock: true,
+  dailyGoalQ: 0, exams: [], weeklyH: 0, weeklyQ: 0, cloudToken: '', cloudGistId: '',
   syncOn: false, syncDir: '', deviceId: '', lastSyncAt: 0, syncSeenAt: 0,
   bgSound: 'none', bgVolume: 35, bgOnlyFocus: true,
   closeToTray: false, autoBackup: false, backupDir: '', lastBackupKey: '',
@@ -71,7 +72,7 @@ const Store = {
   fresh() {
     return {
       version: 2, settings: { ...DEFAULT_SETTINGS }, subjects: [], tasks: [], activeTaskId: null,
-      sessions: [], questions: [], reviews: [], simulados: [], timer: null,
+      sessions: [], questions: [], reviews: [], simulados: [], cards: [], timer: null,
     };
   },
 
@@ -83,10 +84,11 @@ const Store = {
       ...f, ...d,
       settings: { ...f.settings, ...(d.settings || {}) },
       subjects: arr(d.subjects), tasks: arr(d.tasks), sessions: arr(d.sessions), questions: arr(d.questions),
-      reviews: arr(d.reviews), simulados: arr(d.simulados),
+      reviews: arr(d.reviews), simulados: arr(d.simulados), cards: arr(d.cards),
     };
     // matérias: assuntos (tópicos do edital) e metas semanais
-    out.subjects.forEach((s) => { s.topics = arr(s.topics); s.goalH = +s.goalH || 0; s.goalQ = +s.goalQ || 0; });
+    out.subjects.forEach((s) => { s.topics = arr(s.topics); s.goalH = +s.goalH || 0; s.goalQ = +s.goalQ || 0; s.weight = +s.weight || 1; s.diff = +s.diff || 2; });
+    if (!Array.isArray(out.settings.exams)) out.settings.exams = [];
     return out;
   },
 
@@ -124,7 +126,7 @@ const Store = {
 
   subject(id) { return id ? this.data.subjects.find((s) => s.id === id) || null : null; },
   task(id) { return id ? this.data.tasks.find((t) => t.id === id) || null : null; },
-  subjectName(id) { return this.subject(id)?.name || 'Sem matéria'; },
+  subjectName(id) { return this.subject(id)?.name || 'Sem área'; },
   // só aceita cor no formato #rrggbb (o valor vai direto para o HTML)
   subjectColor(id) { const c = this.subject(id)?.color; return /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#9a968e'; },
   activeTask() { const t = this.task(this.data.activeTaskId); return t && !t.done ? t : null; },
@@ -134,7 +136,7 @@ const Store = {
     for (const s of this.data.subjects) { const t = s.topics.find((x) => x.id === id); if (t) return t; }
     return null;
   },
-  topicName(id) { return this.topic(id)?.name || 'Sem assunto'; },
+  topicName(id) { return this.topic(id)?.name || 'Sem tema'; },
   // "Matéria · Assunto" (assunto só se existir)
   label(subjectId, topicId) { const t = this.topic(topicId); return this.subjectName(subjectId) + (t ? ` · ${t.name}` : ''); },
 
@@ -162,7 +164,7 @@ const Store = {
   allQuestions() {
     const out = this.data.questions.slice();
     this.data.simulados.forEach((sim) => sim.rows.forEach((r, i) => {
-      if (r.total > 0) out.push({ id: `${sim.id}_${i}`, date: sim.date, subjectId: r.subjectId || null, topicId: null, taskId: null, total: r.total, correct: r.correct, simId: sim.id });
+      if (r.total > 0) out.push({ id: `${sim.id}_${i}`, date: sim.date, subjectId: r.subjectId || null, topicId: null, taskId: null, total: r.total, correct: r.correct, simId: sim.id, inst: sim.inst || '' });
     }));
     return out;
   },
@@ -175,20 +177,15 @@ const Store = {
     return r;
   },
 
-  hasDemo() { return ['sessions', 'questions', 'simulados'].some((k) => this.data[k].some((x) => x.demo)); },
+  hasDemo() { return ['sessions', 'questions', 'simulados', 'cards'].some((k) => this.data[k].some((x) => x.demo)); },
 
   seedDemo() {
-    const names = ['Biologia', 'Direito Administrativo', 'Matemática', 'Português'];
-    const TOPICS = {
-      Biologia: ['Microbiologia', 'Genética', 'Ecologia', 'Citologia'],
-      'Direito Administrativo': ['Atos administrativos', 'Licitações', 'Controle da Administração', 'Agentes públicos'],
-      'Matemática': ['Porcentagem', 'Razão e proporção', 'Probabilidade', 'Funções'],
-      'Português': ['Crase', 'Concordância', 'Interpretação de texto', 'Pontuação'],
-    };
-    const subs = names.map((n) => {
-      const s = Store.addSubject(n, { demo: true });
-      TOPICS[n].forEach((tn, i) => Store.addTopic(s.id, tn, { studied: i < 2, reviewed: i < 1 }));
-      if (!s.goalH) { s.goalH = [6, 5, 4, 3][names.indexOf(n)]; s.goalQ = [80, 60, 60, 40][names.indexOf(n)]; }
+    // exemplo de residência: as 5 grandes áreas com 4 temas cada
+    const INSTS = ['ENARE', 'USP-SP', 'SUS-SP', 'UNIFESP', 'UNICAMP'];
+    const subs = RES_TEMPLATE.map(([n, color, topics], k) => {
+      const s = Store.addSubject(n, { demo: true, color, weight: 1, diff: [3, 2, 2, 2, 1][k] });
+      topics.slice(0, 4).forEach(([tn, inc], i) => Store.addTopic(s.id, tn, { inc, studied: i < 2, reviewed: i < 1 }));
+      if (!s.goalH) { s.goalH = [6, 5, 4, 4, 3][k]; s.goalQ = [120, 100, 80, 80, 60][k]; }
       return s;
     });
     const today = D.sod(Date.now());
@@ -217,7 +214,7 @@ const Store = {
           const total = rnd(8, 45);
           const acc = 0.62 + Math.random() * 0.3;
           const correct = Math.round(total * acc);
-          const q = { id: uid(), date: t, taskId: task.id, subjectId: subj.id, topicId: topic.id, total, correct, demo: true };
+          const q = { id: uid(), date: t, taskId: task.id, subjectId: subj.id, topicId: topic.id, total, correct, inst: Math.random() < 0.7 ? INSTS[rnd(0, INSTS.length - 1)] : '', demo: true };
           this.data.questions.push(q);
           if (i <= 35) { const r = this.scheduleReview({ subjectId: subj.id, topicId: topic.id, wrong: total - correct, from: t, qId: q.id }); if (r) r.demo = true; }
         }
@@ -239,10 +236,17 @@ const Store = {
     for (let i = 56; i >= 7; i -= 14) {
       const date = D.addDays(today, -i) + 10 * 3600000;
       this.data.simulados.push({
-        id: uid(), name: `Simulado ${Math.round((63 - i) / 14)}`, date, demo: true,
+        id: uid(), name: `Simulado ${Math.round((63 - i) / 14)}`, date, demo: true, inst: INSTS[Math.round((63 - i) / 14) % INSTS.length], cut: 72,
         rows: subs.map((s) => { const total = 20; return { subjectId: s.id, total, correct: Math.round(total * (0.55 + (56 - i) / 300 + Math.random() * 0.2)) }; }),
       });
     }
+    // alguns flashcards
+    [['Tríade de Beck (tamponamento cardíaco)?', 'Hipotensão, turgência jugular e abafamento de bulhas', 0, 0],
+     ['Antídoto da intoxicação por paracetamol?', 'N-acetilcisteína', 0, 3],
+     ['Escore de Apgar: o que avalia?', 'FC, esforço respiratório, tônus, irritabilidade reflexa e cor', 2, 0],
+     ['Sulfato de magnésio na pré-eclâmpsia grave: para quê?', 'Prevenção e tratamento da eclâmpsia (convulsões)', 3, 2],
+     ['Sensibilidade de um teste?', 'Proporção de doentes com teste positivo: VP / (VP + FN)', 4, 3]]
+      .forEach(([front, back, si, ti]) => { const s = subs[si]; this.data.cards.push({ id: uid(), front, back, subjectId: s.id, topicId: s.topics[ti]?.id || null, due: Date.now(), interval: 0, ease: 2.5, reps: 0, lapses: 0, createdAt: Date.now(), demo: true }); });
     this.save();
   },
 
@@ -253,6 +257,7 @@ const Store = {
     d.tasks = d.tasks.filter((x) => !x.demo);
     d.reviews = d.reviews.filter((x) => !x.demo);
     d.simulados = d.simulados.filter((x) => !x.demo);
+    d.cards = d.cards.filter((x) => !x.demo);
     const used = new Set([...d.tasks, ...d.sessions, ...d.questions].map((x) => x.subjectId));
     d.subjects = d.subjects.filter((s) => !s.demo || used.has(s.id));
     this.save();

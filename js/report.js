@@ -144,23 +144,23 @@ const Report = {
   <h2>Foco por dia</h2>
   <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${bars}</svg>
 
-  <h2>Por matéria</h2>
-  ${r.subj.length ? `<table><thead><tr><th>Matéria</th><th>Foco</th><th>Questões</th><th>Acertos</th><th>% acerto</th></tr></thead><tbody>
+  <h2>Por área</h2>
+  ${r.subj.length ? `<table><thead><tr><th>Área</th><th>Foco</th><th>Questões</th><th>Acertos</th><th>% acerto</th></tr></thead><tbody>
     ${r.subj.map((x) => `<tr><td><i style="background:${Store.subjectColor(x.id)}"></i>${esc(Store.subjectName(x.id))}</td><td>${x.f ? Fmt.dur(x.f) : '—'}</td><td>${x.q || '—'}</td><td>${x.q ? x.c : '—'}</td><td>${pct(x.c, x.q)}</td></tr>`).join('')}
   </tbody></table>` : '<p class="m">Nada registrado nesta semana.</p>'}
 
   <div class="two">
     <div>
       <h2>Metas da semana</h2>
-      ${goals.length ? `<table><thead><tr><th>Matéria</th><th>Horas</th><th>Questões</th></tr></thead><tbody>${goals.map(goalRow).join('')}</tbody></table>` : '<p class="m">Nenhuma meta semanal definida.</p>'}
+      ${goals.length ? `<table><thead><tr><th>Área</th><th>Horas</th><th>Questões</th></tr></thead><tbody>${goals.map(goalRow).join('')}</tbody></table>` : '<p class="m">Nenhuma meta semanal definida.</p>'}
     </div>
     <div>
-      <h2>Revisões e edital</h2>
+      <h2>Revisões e temas</h2>
       <table><tbody>
         <tr><td>Revisões feitas</td><td>${r.revDone}</td></tr>
         <tr><td>Novos erros anotados</td><td>${r.revCreated}</td></tr>
         <tr><td>Revisões pendentes no fim da semana</td><td>${r.revPending}</td></tr>
-        <tr><td>Edital estudado</td><td>${topics.length ? `${studied}/${topics.length} (${Math.round((studied / topics.length) * 100)}%)` : '—'}</td></tr>
+        <tr><td>Temas estudados</td><td>${topics.length ? `${studied}/${topics.length} (${Math.round((studied / topics.length) * 100)}%)` : '—'}</td></tr>
       </tbody></table>
     </div>
   </div>

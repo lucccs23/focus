@@ -63,6 +63,12 @@ const Importer = {
     // banca termina antes do próximo rótulo da mesma linha (Órgão:, Prova:, Ano:…)
     const banca = block.match(/banca\s*[:\-]\s*(.+?)(?=\s+(?:[óo]rg[ãa]o|prova|ano|disciplina|cargo|n[íi]vel|modalidade)\s*[:\-]|\s*\||\n|$)/i);
     if (banca) meta.banca = banca[1].trim().slice(0, 60);
+    // instituição (residência): rótulo "Instituição:/Prova:" ou nome conhecido no texto
+    const lab = block.match(/(?:institui[çc][ãa]o|prova|concurso)\s*[:\-]\s*(.+?)(?=\s+(?:ano|banca|[óo]rg[ãa]o|disciplina|cargo)\s*[:\-]|\s*\||\n|$)/i);
+    const known = INSTITUTIONS.find((n) => new RegExp(`(^|[^\\wÀ-ú])${n.replace(/[-]/g, '[-\\s]?')}(?![\\wÀ-ú])`, 'i').test(block));
+    if (known) meta.inst = known;
+    else if (lab) meta.inst = lab[1].trim().slice(0, 40);
+    else if (meta.banca) meta.inst = meta.banca;
     const ano = block.match(/\bano\s*[:\-]\s*((?:19|20)\d{2})/i) || block.match(/\b((?:19|20)\d{2})\b/);
     if (ano) meta.ano = ano[1];
     const gab = block.match(/(?:gabarito|resposta(?:\s+correta)?|alternativa\s+correta)\s*[:\-]?\s*(?:letra\s*)?([A-E](?![a-z])|certo|errado|c(?=\b)|e(?=\b))/i);
@@ -89,7 +95,7 @@ const Importer = {
       box.innerHTML = this.parsed.map((p, i) => `<label class="imp-item">
         <input type="checkbox" data-i="${i}" checked>
         <span class="imp-main"><span class="imp-sum">${esc(p.summary || '(sem texto)')}</span>
-          <small>${[p.meta.id, p.meta.banca, p.meta.ano, p.meta.gabarito && `gabarito: ${p.meta.gabarito}`].filter(Boolean).map(esc).join(' · ') || 'sem banca/ano/gabarito identificados'}</small></span>
+          <small>${[p.meta.id, p.meta.inst || p.meta.banca, p.meta.ano, p.meta.gabarito && `gabarito: ${p.meta.gabarito}`].filter(Boolean).map(esc).join(' · ') || 'sem banca/ano/gabarito identificados'}</small></span>
       </label>`).join('');
     }
     this.count();
@@ -110,14 +116,18 @@ const Importer = {
     if (!chosen.length) return;
     const now = Date.now();
     chosen.forEach((p) => {
-      const tag = [p.meta.banca, p.meta.ano].filter(Boolean).join(' ');
+      const tag = [p.meta.inst || p.meta.banca, p.meta.ano].filter(Boolean).join(' ');
       const note = `${p.meta.id ? `${p.meta.id} · ` : ''}${p.summary}${tag ? ` (${tag})` : ''}${p.meta.gabarito ? ` — gabarito: ${p.meta.gabarito}` : ''}`;
       const r = Store.scheduleReview({ subjectId: pick.subjectId, topicId: pick.topicId, wrong: 1, note: note.slice(0, 300), from: now });
       r.text = p.text;
       r.imported = true;
+      if (p.meta.inst) r.inst = p.meta.inst;
     });
     if (f.asDone.checked) {
-      Store.data.questions.push({ id: uid(), date: now, taskId: null, subjectId: pick.subjectId, topicId: pick.topicId, total: chosen.length, correct: 0 });
+      // agrupa por instituição (cada uma vira um registro de questões)
+      const by = new Map();
+      chosen.forEach((p) => by.set(p.meta.inst || '', (by.get(p.meta.inst || '') || 0) + 1));
+      by.forEach((n, inst) => Store.data.questions.push({ id: uid(), date: now, taskId: null, subjectId: pick.subjectId, topicId: pick.topicId, total: n, correct: 0, inst }));
     }
     $('#impDlg').close();
     App.renderAll();

@@ -19,9 +19,9 @@ const Pick = {
 
   fill(form, subjectId, topicId) {
     const subs = Store.data.subjects;
-    form.subjectId.innerHTML = '<option value="">Sem matéria</option>'
+    form.subjectId.innerHTML = '<option value="">Sem área</option>'
       + subs.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')
-      + '<option value="__new">+ Nova matéria…</option>';
+      + '<option value="__new">+ Nova área…</option>';
     form.subjectId.value = subs.some((s) => s.id === subjectId) ? subjectId : '';
     form.newSubject.value = '';
     form.newTopic.value = '';
@@ -33,9 +33,9 @@ const Pick = {
     const sid = form.subjectId.value;
     const s = Store.subject(sid);
     const topics = s ? s.topics : [];
-    form.topicId.innerHTML = '<option value="">Sem assunto</option>'
+    form.topicId.innerHTML = '<option value="">Sem tema</option>'
       + topics.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('')
-      + (sid ? '<option value="__new">+ Novo assunto…</option>' : '');
+      + (sid ? '<option value="__new">+ Novo tema…</option>' : '');
     form.topicId.value = topics.some((t) => t.id === topicId) ? topicId : '';
     form.topicId.disabled = !sid;
   },
@@ -51,12 +51,12 @@ const Pick = {
     let topicId = form.topicId.value || null;
     if (subjectId === '__new') {
       const s = Store.addSubject(form.newSubject.value);
-      if (!s) return { error: 'Digite o nome da nova matéria.', el: form.newSubject };
+      if (!s) return { error: 'Digite o nome da nova área.', el: form.newSubject };
       subjectId = s.id;
     }
     if (topicId === '__new') {
       const t = Store.addTopic(subjectId, form.newTopic.value);
-      if (!t) return { error: 'Digite o nome do novo assunto.', el: form.newTopic };
+      if (!t) return { error: 'Digite o nome do novo tema.', el: form.newTopic };
       topicId = t.id;
     }
     return { subjectId, topicId };
@@ -64,18 +64,54 @@ const Pick = {
 };
 
 /* ============================================================
-   Matérias, edital verticalizado e metas semanais
+   Áreas, temas, provas-alvo e metas (ciclo de estudos)
    ============================================================ */
 const Subjects = {
   dlg: null,
+  noteTopic: null,
 
   init() {
     this.dlg = $('#subjDlg');
     $('#subjAddForm').onsubmit = (e) => {
       e.preventDefault();
       const inp = e.target.name;
-      if (Store.addSubject(inp.value)) { inp.value = ''; this.changed(); }
+      if (Store.addSubject(inp.value, { weight: 1, diff: 2 })) { inp.value = ''; this.changed(); }
     };
+    $('#btnTemplate').onclick = () => {
+      const { ns, nt } = Plan.loadTemplate();
+      App.toast(ns || nt ? `Modelo carregado: ${ns} área(s) e ${nt} tema(s) novos` : 'O modelo já estava carregado');
+      this.changed();
+    };
+    // provas-alvo
+    $('#examAdd').onsubmit = (e) => {
+      e.preventDefault();
+      const f = e.target, name = f.name.value.trim();
+      if (!name || !f.date.value) { App.toast('Informe o nome e a data da prova'); return; }
+      const s = Store.data.settings;
+      s.exams = [...(s.exams || []), { id: uid(), name, date: D.fromKey(f.date.value) }];
+      f.name.value = ''; f.date.value = '';
+      this.changed();
+    };
+    $('#examList').onclick = (e) => {
+      const b = e.target.closest('[data-del-exam]');
+      if (!b) return;
+      const s = Store.data.settings;
+      s.exams = (s.exams || []).filter((x) => x.id !== b.dataset.delExam);
+      this.changed();
+    };
+    // ciclo: distribuir metas
+    $('#cycleForm').onsubmit = (e) => {
+      e.preventDefault();
+      const f = e.target, s = Store.data.settings;
+      const h = Math.max(0, Math.min(150, +f.hours.value || 0)), q = Math.max(0, Math.min(5000, Math.round(+f.qs.value || 0)));
+      if (!h && !q) { App.toast('Informe as horas e/ou questões por semana'); return; }
+      if (!Store.data.subjects.length) { App.toast('Cadastre as áreas primeiro'); return; }
+      s.weeklyH = h; s.weeklyQ = q;
+      Plan.distribute(h, q);
+      App.toast('Metas semanais distribuídas pelo peso e pela dificuldade');
+      this.changed();
+    };
+
     const box = $('#subjCards');
     box.addEventListener('change', (e) => this.onChange(e));
     box.addEventListener('click', (e) => this.onClick(e));
@@ -90,11 +126,44 @@ const Subjects = {
     box.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey && e.target.tagName === 'TEXTAREA') { e.preventDefault(); e.target.form.requestSubmit(); }
     });
+
+    // anotações do tema
+    const nf = $('#noteForm');
+    nf.onsubmit = (e) => {
+      e.preventDefault();
+      const t = Store.topic(this.noteTopic);
+      if (t) t.notes = nf.notes.value.trim();
+      $('#noteDlg').close();
+      this.changed();
+    };
+    nf.notes.addEventListener('input', () => this.noteLinks());
   },
 
-  open() { this.dlg.showModal(); this.render(); },
+  open(section) {
+    this.dlg.showModal();
+    this.render();
+    if (section === 'exams') { $('#examAdd').name.focus(); $('#examSec').scrollIntoView({ block: 'start' }); }
+  },
   isOpen() { return !!this.dlg?.open; },
   changed() { this.render(); App.renderAll(); },
+
+  openNote(topicId) {
+    const t = Store.topic(topicId);
+    if (!t) return;
+    this.noteTopic = topicId;
+    const s = Store.data.subjects.find((x) => x.topics.includes(t));
+    $('#noteTitle').textContent = t.name;
+    $('#noteSub').textContent = s ? s.name : '';
+    $('#noteForm').notes.value = t.notes || '';
+    this.noteLinks();
+    $('#noteDlg').showModal();
+    $('#noteForm').notes.focus();
+  },
+  // links encontrados na anotação viram botões clicáveis
+  noteLinks() {
+    const urls = [...new Set(($('#noteForm').notes.value.match(/https?:\/\/[^\s<>"']+/g) || []))];
+    $('#noteLinks').innerHTML = urls.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\//, '').slice(0, 60))}</a>`).join('');
+  },
 
   onChange(e) {
     const card = e.target.closest('.scard');
@@ -104,14 +173,17 @@ const Subjects = {
     const f = e.target.dataset.f, tf = e.target.dataset.t;
     if (f === 'name') { const n = e.target.value.trim(); if (n) s.name = n; else e.target.value = s.name; }
     if (f === 'color') s.color = e.target.value;
+    if (f === 'weight') s.weight = Math.max(1, Math.min(5, +e.target.value || 1));
+    if (f === 'diff') s.diff = Math.max(1, Math.min(3, +e.target.value || 2));
     if (f === 'goalH' || f === 'goalQ') {
-      const v = Math.max(0, Math.min(f === 'goalH' ? 100 : 5000, Math.round(+e.target.value || 0)));
+      const v = Math.max(0, Math.min(f === 'goalH' ? 100 : 5000, f === 'goalH' ? Math.round((+e.target.value || 0) * 2) / 2 : Math.round(+e.target.value || 0)));
       s[f] = v; e.target.value = v || '';
     }
     if (tf) {
       const t = s.topics.find((x) => x.id === e.target.closest('tr').dataset.tid);
       if (!t) return;
       if (tf === 'name') { const n = e.target.value.trim(); if (n) t.name = n; else e.target.value = t.name; }
+      else if (tf === 'inc') t.inc = e.target.value;
       else t[tf] = e.target.checked;
     }
     this.changed();
@@ -123,9 +195,11 @@ const Subjects = {
     const s = Store.subject(card.dataset.id);
     if (!s) return;
     const d = Store.data;
+    const note = e.target.closest('[data-note]');
+    if (note) return this.openNote(note.closest('tr').dataset.tid);
     if (e.target.closest('[data-del-subj]')) {
-      if (!confirm(`Excluir a matéria "${s.name}"?\nTarefas e registros dela passam para "Sem matéria".`)) return;
-      const all = [...d.tasks, ...d.sessions, ...d.questions, ...d.reviews];
+      if (!confirm(`Excluir a área "${s.name}"?\nTarefas e registros dela passam para "Sem área".`)) return;
+      const all = [...d.tasks, ...d.sessions, ...d.questions, ...d.reviews, ...d.cards];
       all.forEach((x) => { if (x.subjectId === s.id) { x.subjectId = null; x.topicId = null; } });
       d.simulados.forEach((sim) => sim.rows.forEach((r) => { if (r.subjectId === s.id) r.subjectId = null; }));
       d.subjects = d.subjects.filter((x) => x.id !== s.id);
@@ -135,54 +209,71 @@ const Subjects = {
     if (del) {
       const tid = del.closest('tr').dataset.tid;
       const t = s.topics.find((x) => x.id === tid);
-      if (!t || !confirm(`Excluir o assunto "${t.name}"?\nOs registros dele continuam na matéria, como "Sem assunto".`)) return;
-      [...d.tasks, ...d.sessions, ...d.questions, ...d.reviews].forEach((x) => { if (x.topicId === tid) x.topicId = null; });
+      if (!t || !confirm(`Excluir o tema "${t.name}"?\nOs registros dele continuam na área, como "Sem tema".`)) return;
+      [...d.tasks, ...d.sessions, ...d.questions, ...d.reviews, ...d.cards].forEach((x) => { if (x.topicId === tid) x.topicId = null; });
       s.topics = s.topics.filter((x) => x.id !== tid);
       this.changed();
     }
   },
 
+  renderExams() {
+    const ex = (Store.data.settings.exams || []).slice().sort((a, b) => a.date - b.date);
+    $('#examList').innerHTML = ex.length ? ex.map((x) => {
+      const n = Plan.daysTo(x.date);
+      return `<div class="exam-item"><b>${esc(x.name)}</b><span>${D.ddmmyy(x.date)}</span><span class="muted">${n >= 0 ? `faltam ${n} dia${n === 1 ? '' : 's'}` : 'já passou'}</span>
+        <button class="kebab" data-del-exam="${x.id}" title="Remover" aria-label="Remover prova">×</button></div>`;
+    }).join('') : '<p class="hint" style="margin:0 0 8px">Nenhuma prova cadastrada.</p>';
+    const s = Store.data.settings, f = $('#cycleForm');
+    if (document.activeElement !== f.hours) f.hours.value = s.weeklyH || '';
+    if (document.activeElement !== f.qs) f.qs.value = s.weeklyQ || '';
+  },
+
   render() {
     if (!this.isOpen()) return;
+    this.renderExams();
+    Plan.refreshInst?.();
     const subs = Store.data.subjects;
-    const qBy = new Map();
-    Store.allQuestions().forEach((q) => {
-      if (!q.topicId) return;
-      const o = qBy.get(q.topicId) || { q: 0, c: 0 };
-      o.q += q.total; o.c += q.correct;
-      qBy.set(q.topicId, o);
-    });
+    const qBy = Plan.topicStats();
     const allT = subs.flatMap((s) => s.topics);
     const st = allT.filter((t) => t.studied).length, rv = allT.filter((t) => t.reviewed).length;
+    $('#btnTemplate').textContent = subs.length ? 'Completar com o modelo das 5 grandes áreas' : 'Carregar as 5 grandes áreas da residência';
     $('#edSummary').innerHTML = allT.length ? `
       <div class="ed-sum">
-        <div><b>${Math.round((st / allT.length) * 100)}%</b> do edital estudado <span class="muted">· ${st} de ${allT.length} assuntos · ${rv} revisados</span></div>
+        <div><b>${Math.round((st / allT.length) * 100)}%</b> dos temas estudados <span class="muted">· ${st} de ${allT.length} temas · ${rv} revisados</span></div>
         <div class="bar"><i style="width:${((st / allT.length) * 100).toFixed(1)}%"></i></div>
       </div>` : '';
 
     const dash = '<span class="muted">—</span>';
+    const opt = (map, v) => Object.entries(map).map(([k, o]) => `<option value="${k}"${String(v) === k ? ' selected' : ''}>${o.label}</option>`).join('');
+    const noteIco = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7A2.5 2.5 0 0 0 4.5 6v12A2.5 2.5 0 0 0 7 20.5h10a2.5 2.5 0 0 0 2.5-2.5V9z"/><path d="M14 3.5V9h5.5"/><path d="M8.5 13h7M8.5 16.5h5"/></svg>';
     $('#subjCards').innerHTML = subs.length ? subs.map((s) => {
       const n = s.topics.length, ns = s.topics.filter((t) => t.studied).length, nr = s.topics.filter((t) => t.reviewed).length;
       return `<div class="scard" data-id="${s.id}">
         <div class="scard-head">
           <input type="color" value="${Store.subjectColor(s.id)}" data-f="color" aria-label="Cor">
-          <input class="sname" value="${esc(s.name)}" data-f="name" maxlength="60" aria-label="Nome da matéria">
-          <label class="goal">Meta/semana <input type="number" min="0" max="100" value="${s.goalH || ''}" placeholder="0" data-f="goalH" aria-label="Horas por semana"> h</label>
+          <input class="sname" value="${esc(s.name)}" data-f="name" maxlength="60" aria-label="Nome da área">
+          <button class="kebab" data-del-subj title="Excluir área" aria-label="Excluir área">×</button>
+        </div>
+        <div class="scard-goals">
+          <label class="goal">Peso na prova <select data-f="weight" aria-label="Peso">${[1, 2, 3, 4, 5].map((v) => `<option${(+s.weight || 1) === v ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label class="goal">Dificuldade <select data-f="diff" aria-label="Dificuldade">${opt(DIFF, s.diff || 2)}</select></label>
+          <label class="goal">Meta/semana <input type="number" min="0" max="100" step="0.5" value="${s.goalH || ''}" placeholder="0" data-f="goalH" aria-label="Horas por semana"> h</label>
           <label class="goal"><input type="number" min="0" max="5000" value="${s.goalQ || ''}" placeholder="0" data-f="goalQ" aria-label="Questões por semana"> questões</label>
-          <button class="kebab" data-del-subj title="Excluir matéria" aria-label="Excluir matéria">×</button>
         </div>
         ${n ? `<div class="ed-progress"><div class="bar"><i style="width:${((ns / n) * 100).toFixed(1)}%;background:${Store.subjectColor(s.id)}"></i></div><span>${ns}/${n} estudados · ${nr} revisados</span></div>` : ''}
-        ${n ? `<div class="tbl-wrap"><table class="tbl topics"><thead><tr><th>Assunto</th><th>Teoria</th><th>Revisão</th><th>Questões</th><th>% acerto</th><th></th></tr></thead><tbody>
+        ${n ? `<div class="tbl-wrap"><table class="tbl topics"><thead><tr><th>Tema</th><th>Incidência</th><th>Teoria</th><th>Revisão</th><th>Questões</th><th>% acerto</th><th></th><th></th></tr></thead><tbody>
           ${s.topics.map((t) => { const q = qBy.get(t.id); return `<tr data-tid="${t.id}">
-            <td><input class="tname" value="${esc(t.name)}" data-t="name" maxlength="80" aria-label="Nome do assunto"></td>
+            <td><input class="tname" value="${esc(t.name)}" data-t="name" maxlength="80" aria-label="Nome do tema"></td>
+            <td><select class="tinc inc-${t.inc || 'x'}" data-t="inc" aria-label="Incidência"><option value="">—</option>${opt(INC, t.inc || '')}</select></td>
             <td><input type="checkbox" data-t="studied"${t.studied ? ' checked' : ''} aria-label="Teoria estudada"></td>
             <td><input type="checkbox" data-t="reviewed"${t.reviewed ? ' checked' : ''} aria-label="Revisado"></td>
             <td>${q ? Fmt.int(q.q) : dash}</td><td>${q ? Fmt.pct(q.c / q.q) : dash}</td>
-            <td><button class="kebab" data-del-topic title="Excluir assunto" aria-label="Excluir assunto">×</button></td></tr>`; }).join('')}
+            <td><button class="kebab note-btn${t.notes ? ' has' : ''}" data-note title="${t.notes ? 'Ver anotações' : 'Anotações e links'}" aria-label="Anotações">${noteIco}</button></td>
+            <td><button class="kebab" data-del-topic title="Excluir tema" aria-label="Excluir tema">×</button></td></tr>`; }).join('')}
         </tbody></table></div>` : ''}
-        <form class="tadd"><textarea name="names" rows="1" placeholder="Novo assunto — ou cole a lista do edital, um por linha"></textarea><button class="btn" type="submit">Adicionar</button></form>
+        <form class="tadd"><textarea name="names" rows="1" placeholder="Novo tema — ou cole uma lista, um por linha"></textarea><button class="btn" type="submit">Adicionar</button></form>
       </div>`;
-    }).join('') : '<p class="empty">Nenhuma matéria ainda. Adicione a primeira acima.</p>';
+    }).join('') : '<p class="empty">Nenhuma área ainda. Carregue o modelo das 5 grandes áreas acima ou adicione a primeira.</p>';
   },
 };
 
@@ -216,7 +307,7 @@ const Week = {
     if (!rows.length) {
       el.hidden = !subs.length;
       el.innerHTML = `<div class="panel-head"><h3>Metas da semana</h3></div>
-        <p class="hint" style="margin:0">Defina metas semanais (horas e questões) por matéria para o app sugerir o que estudar a seguir.
+        <p class="hint" style="margin:0">Defina metas semanais (horas e questões) por área para o app sugerir o que estudar a seguir.
         <button class="link" data-open-subjects>Definir metas</button></p>`;
       return;
     }
@@ -244,7 +335,7 @@ const Week = {
     const d = Store.data;
     let t = d.tasks.find((x) => x.subjectId === s.id && !x.done && !x.archived);
     if (!t) {
-      const topic = s.topics.find((x) => !x.studied);
+      const topic = Plan.weak(50).find((w) => w.s === s)?.t || s.topics.find((x) => !x.studied);
       t = { id: uid(), title: `Estudo de ${s.name}${topic ? ` — ${topic.name}` : ''}`, subjectId: s.id, topicId: topic?.id || null, type: 'estudo', est: 1, pomos: 0, focusMs: 0, done: false, archived: false, createdAt: Date.now() };
       d.tasks.push(t);
     }

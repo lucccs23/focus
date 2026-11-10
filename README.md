@@ -1,6 +1,6 @@
 # Focus
 
-Pomodoro, cronômetro, tarefas e estatísticas de estudo e questões, pensado para concurso. HTML/CSS/JS puro (sem build) rodando no Electron.
+Pomodoro, cronômetro, tarefas e estatísticas de estudo e questões, pensado para quem estuda para residência médica. HTML/CSS/JS puro (sem build) rodando no Electron.
 
 ## Abrir
 
@@ -28,19 +28,26 @@ Os dados ficam em `%APPDATA%\Foco Lab` (nome antigo do app, mantido para não pe
 ## Funções
 
 - **Timer**: pomodoro, pausas e cronômetro; sessões interrompidas com 1 min ou mais são salvas.
-- **Tarefas** de estudo ou de questões, ligadas a matéria e assunto.
-- **Histórico** (`H`): ver, editar e excluir sessões e registros de questões de qualquer dia; lançar tempo estudado fora do app.
-- **Matérias e edital** (`D`): assuntos por matéria (dá para colar a lista do edital), teoria/revisão marcadas, desempenho por assunto e **metas semanais** (horas e questões).
-- **Ciclo de estudos**: o cartão "Metas da semana" sugere a matéria mais atrasada e inicia o estudo dela.
-- **Caderno de erros** (`C`): todo registro com erros vira revisão em 1, 7 e 30 dias; as do dia aparecem na tela inicial.
-- **Simulados** (`S`): nota por matéria, evolução e comparação com o anterior; as questões entram nas estatísticas.
-- **Estatísticas** (`E`): questões, acertos, foco, mapa de constância do ano, tabela por matéria e, filtrando uma matéria, por assunto.
-- **Som de fundo**: ruído branco, chuva suave ou cachoeira, só durante o foco ou sempre.
-- **Sincronizar entre computadores**: em Ajustes, escolha a mesma pasta do OneDrive/Google Drive/Dropbox nos dois PCs. O app grava e lê o arquivo focus-sync.json dali (timer e preferências locais não vão junto).
+- **Tarefas** de estudo ou de questões, ligadas a área e tema.
+- **Áreas, temas e metas** (`D`):
+  - botão que carrega as **5 grandes áreas da residência** (Clínica Médica, Cirurgia, Pediatria, GO e Preventiva) com os temas e a incidência de cada um;
+  - peso na prova e dificuldade por área; incidência (alta/média/baixa), teoria/revisão e **anotações com links** por tema.
+- **Provas-alvo**: cadastre as provas (ENARE, USP, SUS-SP…) com a data. A tela inicial mostra os dias que faltam e o **ritmo necessário** (temas por semana).
+- **Atacar primeiro**: temas muito cobrados em que você acerta pouco, ou de alta incidência ainda não estudados, com um botão para estudar ou fazer questões.
+- **Ciclo de estudos**: informe as horas e as questões por semana, e o app distribui as metas pelo peso e pela dificuldade de cada área. "Estudar agora" escolhe a área mais atrasada e o tema mais fraco dela.
+- **Caderno de erros** (`C`): todo registro com erros vira revisão em 1, 7 e 30 dias; "Colar questões erradas" separa as questões coladas e identifica código, instituição, ano e gabarito.
+- **Flashcards** (`F`): revisão espaçada no estilo do Anki (Errei/Difícil/Bom/Fácil), por área e tema, importação do Anki (frente e verso separados por tabulação, `;` ou `::`). Os do dia aparecem em "Revisões para hoje".
+- **Simulados** (`S`): instituição, **nota ponderada pelo peso das áreas**, **nota de corte** (acima/abaixo) e onde o simulado perdeu mais pontos.
+- **Estatísticas** (`E`): questões, acertos, foco, mapa de constância do ano, tabelas por área, por tema e **por instituição**.
+- **Metas diárias** de foco e de questões, com barras na tela inicial.
+- **Sincronizar celular e computador** pela internet: em Ajustes, cole um código de acesso do GitHub (permissão "gist") nos dois aparelhos. Os dados vão para um gist secreto da sua conta; o código fica só no aparelho e não entra nos backups.
+- **Sincronizar entre computadores por pasta** (app de desktop): mesma pasta do OneDrive, Google Drive ou Dropbox nos dois PCs.
+- **Backup**: exportar/importar (substituir), **juntar backup** (adiciona o que falta sem apagar nada), **planilha CSV** para o Excel e backup automático diário (desktop).
 - **Relatório semanal em PDF**: botão nas Estatísticas (esta semana ou a passada).
-- **Colar questões erradas**: no caderno de erros, cole o texto das questões (QConcursos, TEC, PDF da prova); o app separa cada uma, identifica código, banca, ano e gabarito e agenda as revisões.
-- **Temas**: Do sistema, Claro, Escuro, Papel, Lavanda, Noite, Floresta e Alto contraste (Ajustes → Aparência).
-- **Desktop**: mini-timer sempre no topo (`M`), ícone perto do relógio com menu, opção de continuar rodando ao fechar a janela, atalhos globais (`Ctrl+Alt+P` iniciar/pausar, `Ctrl+Alt+N` pular, `Ctrl+Alt+M` mini, `Ctrl+Alt+F` abrir) e **backup automático diário** numa pasta (mantém os 30 últimos).
+- **Som de fundo**: ruído branco, chuva suave ou cachoeira, só durante o foco ou sempre.
+- **Temas visuais**: Do sistema, Claro, Escuro, Papel, Lavanda, Noite, Floresta e Alto contraste (Ajustes → Aparência).
+- **Celular e tablet**: app instalável e offline (https://lucccs23.github.io/focus/), barra de navegação embaixo, tela ligada enquanto o timer roda e aviso de nova versão.
+- **Desktop**: mini-timer sempre no topo (`M`), ícone perto do relógio com menu, opção de continuar rodando ao fechar a janela, atalhos globais (`Ctrl+Alt+P` iniciar/pausar, `Ctrl+Alt+N` pular, `Ctrl+Alt+M` mini, `Ctrl+Alt+F` abrir) e duas colunas com a janela larga.
 
 ## Estrutura
 

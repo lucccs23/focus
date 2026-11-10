@@ -28,6 +28,7 @@ const Reviews = {
     $('#revList').addEventListener('click', act);
     $('#reviewsToday').addEventListener('click', (e) => {
       if (e.target.closest('[data-open-reviews]')) return this.open();
+      if (e.target.closest('[data-open-cards]')) return Cards.open();
       act(e);
     });
   },
@@ -116,12 +117,14 @@ const Reviews = {
     badge.hidden = !due.length;
     badge.textContent = due.length > 99 ? '99+' : due.length;
     const el = $('#reviewsToday');
-    el.hidden = !due.length;
-    if (!due.length) return;
+    const cardsDue = Cards.due().length;
+    el.hidden = !due.length && !cardsDue;
+    if (el.hidden) return;
     const show = due.slice(0, 4);
     el.innerHTML = `
-      <div class="panel-head"><h3>Revisões para hoje <span class="count">${due.length}</span></h3><button class="link" data-open-reviews>Abrir caderno de erros</button></div>
-      <div class="rv-list">${show.map((r) => this.row(r, true)).join('')}</div>
+      <div class="panel-head"><h3>Revisões para hoje <span class="count">${due.length + cardsDue}</span></h3>${due.length ? '<button class="link" data-open-reviews>Abrir caderno de erros</button>' : ''}</div>
+      ${cardsDue ? `<div class="fc-due"><span><b>${cardsDue}</b> flashcard${cardsDue === 1 ? '' : 's'} para revisar</span><button class="btn primary sm" data-open-cards>Estudar cartões</button></div>` : ''}
+      ${due.length ? `<div class="rv-list">${show.map((r) => this.row(r, true)).join('')}</div>` : ''}
       ${due.length > show.length ? `<p class="hint" style="margin:8px 0 0">+ ${due.length - show.length} outras no caderno de erros.</p>` : ''}`;
   },
 
@@ -129,7 +132,7 @@ const Reviews = {
     if (!this.isOpen()) return;
     $$('#revTab button').forEach((b) => b.classList.toggle('on', b.dataset.v === this.tab));
     const sel = $('#revSubject');
-    sel.innerHTML = '<option value="all">Todas as matérias</option>' + Store.data.subjects.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    sel.innerHTML = '<option value="all">Todas as áreas</option>' + Store.data.subjects.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
     sel.value = Store.subject(this.subj) ? this.subj : 'all';
     const e = this.endOfToday();
     let list = Store.data.reviews.filter((r) => sel.value === 'all' || r.subjectId === sel.value);

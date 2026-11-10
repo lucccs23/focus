@@ -146,7 +146,7 @@ const Stats = {
     $$('#fRange button').forEach((b) => b.classList.toggle('on', b.dataset.v === String(st.range)));
     $$('#fGroup button').forEach((b) => b.classList.toggle('on', b.dataset.v === st.group));
     const sel = $('#fSubject');
-    sel.innerHTML = '<option value="all">Todas as matérias</option><option value="none">Sem matéria</option>'
+    sel.innerHTML = '<option value="all">Todas as áreas</option><option value="none">Sem área</option>'
       + Store.data.subjects.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
     if (!sel.querySelector(`option[value="${CSS.escape(st.subject)}"]`)) st.subject = 'all';
     sel.value = st.subject;
@@ -156,7 +156,7 @@ const Stats = {
     const r = this.compute();
     const gl = GROUP_LABEL[st.group];
     const rangeTxt = st.range === 'all' ? 'Todo o histórico' : st.range === 365 ? 'Últimos 12 meses' : `Últimos ${st.range} dias`;
-    const subjTxt = st.subject === 'all' ? 'todas as matérias' : st.subject === 'none' ? 'sem matéria' : Store.subjectName(st.subject);
+    const subjTxt = st.subject === 'all' ? 'todas as áreas' : st.subject === 'none' ? 'sem área' : Store.subjectName(st.subject);
     const kpi = (l, v, s) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
     const e = r.q - r.c;
 
@@ -203,9 +203,10 @@ const Stats = {
         <span><i style="background:var(--accent)"></i>Estudo e outros</span>
       </div>
 
-      ${this.byTopic() ? `<h4 class="stats-h">Por assunto — ${esc(Store.subjectName(st.subject))} <small>(<button class="link" data-k-clear>voltar para todas as matérias</button>)</small></h4>`
-        : `<h4 class="stats-h">Por matéria <small>(${TAP} numa linha para ver os assuntos dela)</small></h4>`}
-      <div class="tbl-wrap">${this.subjectTable(r)}</div>`;
+      ${this.byTopic() ? `<h4 class="stats-h">Por tema — ${esc(Store.subjectName(st.subject))} <small>(<button class="link" data-k-clear>voltar para todas as áreas</button>)</small></h4>`
+        : `<h4 class="stats-h">Por área <small>(${TAP} numa linha para ver os temas dela)</small></h4>`}
+      <div class="tbl-wrap">${this.subjectTable(r)}</div>
+      ${this.instTable(r)}`;
 
     this._B = r.B;
     this.drawCharts(r.B);
@@ -246,6 +247,23 @@ const Stats = {
     return `<svg class="heat" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">${months}${days}${cells}</svg>
       <div class="heat-foot"><span>${active} dias com ${metric === 'focus' ? 'foco' : 'questões'} · ${metric === 'focus' ? Fmt.dur(total) : `${Fmt.int(total)} questões`} no ano</span>
       <span class="heat-scale">menos <i class="hc l0"></i><i class="hc l1"></i><i class="hc l2"></i><i class="hc l3"></i><i class="hc l4"></i> mais</span></div>`;
+  },
+
+  // acerto por instituição (registros com instituição + simulados), no intervalo e filtros escolhidos
+  instTable(r) {
+    const m = new Map();
+    Store.allQuestions().forEach((q) => {
+      if (!q.inst || q.date < r.start || q.date >= r.end || !this.qOk(q)) return;
+      const o = m.get(q.inst) || { q: 0, c: 0, sim: 0 };
+      o.q += q.total; o.c += q.correct; if (q.simId) o.sim += q.total;
+      m.set(q.inst, o);
+    });
+    if (!m.size) return '';
+    const list = [...m.entries()].sort((a, b) => b[1].q - a[1].q);
+    return `<h4 class="stats-h">Por instituição <small>(questões registradas com a instituição e simulados)</small></h4>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Instituição</th><th>Questões</th><th>Acertos</th><th>Erros</th><th>% acerto</th><th>Em simulados</th></tr></thead><tbody>
+      ${list.map(([k, x]) => `<tr><td>${esc(k)}</td><td>${Fmt.int(x.q)}</td><td>${Fmt.int(x.c)}</td><td>${Fmt.int(x.q - x.c)}</td><td>${Fmt.pct(x.c / x.q)}</td><td>${x.sim ? Fmt.int(x.sim) : '<span class="muted">—</span>'}</td></tr>`).join('')}
+      </tbody></table></div>`;
   },
 
   goalDays() {
@@ -342,7 +360,7 @@ const Stats = {
       return (va - vb) * dir;
     });
 
-    const cols = [['name', topicMode ? 'Assunto' : 'Matéria'], ['q', 'Questões'], ['c', 'Acertos'], ['e', 'Erros'], ['pct', '% acerto'], ['delta', 'vs. anterior'], ['f', 'Tempo total'], ['pace', 'Tempo/questão']];
+    const cols = [['name', topicMode ? 'Tema' : 'Área'], ['q', 'Questões'], ['c', 'Acertos'], ['e', 'Erros'], ['pct', '% acerto'], ['delta', 'vs. anterior'], ['f', 'Tempo total'], ['pace', 'Tempo/questão']];
     const dash = '<span class="muted">—</span>';
     const delta = (v) => {
       if (v == null) return dash;
@@ -351,7 +369,7 @@ const Stats = {
       return `<span class="${pp > 0 ? 'up' : 'down'}">${pp > 0 ? '+' : ''}${Fmt.dec(pp)} p.p.</span>`;
     };
     return `<table class="tbl${topicMode ? '' : ' click'}"><thead><tr>${cols.map(([k, l]) => `<th data-sort="${k}" class="${key === k ? 'sorted' : ''}">${l}${key === k ? (dir > 0 ? ' ▴' : ' ▾') : ''}</th>`).join('')}</tr></thead><tbody>
-      ${list.map((x) => `<tr ${topicMode ? '' : `data-k="${x.k}" title="Ver assuntos de ${esc(x.name)}"`}>
+      ${list.map((x) => `<tr ${topicMode ? '' : `data-k="${x.k}" title="Ver temas de ${esc(x.name)}"`}>
         <td><span class="tag" style="--c:${x.color}">${esc(x.name)}</span></td>
         <td>${Fmt.int(x.q)}</td><td>${Fmt.int(x.c)}</td><td>${Fmt.int(x.e)}</td>
         <td>${x.pct == null ? dash : Fmt.pct(x.pct)}</td>

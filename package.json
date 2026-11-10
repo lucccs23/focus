@@ -1,7 +1,7 @@
 {
   "name": "focus",
   "productName": "Focus",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Pomodoro, cronômetro e estatísticas de estudo",
   "main": "electron/main.js",
   "private": true,

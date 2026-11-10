@@ -35,14 +35,19 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4v4.5h4.5"/><path d="M12 7.5V12l3 2"/></svg>
         <span class="nav-lbl">Histórico</span>
       </button>
-      <button class="icon-btn nav-btn" id="btnSubjects" title="Matérias, edital e metas (D)" aria-label="Matérias e edital">
+      <button class="icon-btn nav-btn" id="btnSubjects" title="Áreas, temas, provas e metas (D)" aria-label="Áreas e temas">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/></svg>
-        <span class="nav-lbl">Matérias</span>
+        <span class="nav-lbl">Áreas</span>
       </button>
       <button class="icon-btn nav-btn" id="btnReviews" title="Caderno de erros e revisões (C)" aria-label="Caderno de erros">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>
         <span class="badge" id="revBadge" hidden></span>
         <span class="nav-lbl">Erros</span>
+      </button>
+      <button class="icon-btn nav-btn" id="btnCards" title="Flashcards (F)" aria-label="Flashcards">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="7" width="13" height="13" rx="2"/><path d="M7.5 7V5.5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>
+        <span class="badge" id="cardBadge" hidden></span>
+        <span class="nav-lbl">Cards</span>
       </button>
       <button class="icon-btn nav-btn" id="btnSims" title="Simulados (S)" aria-label="Simulados">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><path d="M15 5.5h2.5A1.5 1.5 0 0 1 19 7v12.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5V7a1.5 1.5 0 0 1 1.5-1.5H9"/><path d="M9 13l2 2 4-4"/></svg>
@@ -50,7 +55,7 @@
       </button>
       <button class="icon-btn nav-btn" id="btnStats" title="Estatísticas (E)" aria-label="Estatísticas">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V6"/><path d="M17 16V9"/></svg>
-        <span class="nav-lbl">Estatísticas</span>
+        <span class="nav-lbl"><span class="lbl-long">Estatísticas</span><span class="lbl-short">Números</span></span>
       </button>
       <button class="icon-btn nav-btn" id="btnSettings" title="Configurações" aria-label="Configurações">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></svg>
@@ -100,6 +105,7 @@
   </section>
 
   <section class="today" id="today"></section>
+  <section class="panel" id="exams" hidden></section>
   <section class="panel" id="week" hidden></section>
   <section class="panel" id="reviewsToday" hidden></section>
 
@@ -116,7 +122,7 @@
 
   <section class="panel dash" id="dash" hidden></section>
 
-  <footer class="foot">Focus v0.8 · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
+  <footer class="foot">Focus v0.9 · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
 </div>
 
 <!-- Atalhos -->
@@ -131,8 +137,9 @@
       <span><kbd>T</kbd></span><span>Nova tarefa</span>
       <span><kbd>Q</kbd></span><span>Registrar questões</span>
       <span><kbd>H</kbd></span><span>Histórico</span>
-      <span><kbd>D</kbd></span><span>Matérias e edital</span>
+      <span><kbd>D</kbd></span><span>Áreas, temas e provas</span>
       <span><kbd>C</kbd></span><span>Caderno de erros</span>
+      <span><kbd>F</kbd></span><span>Flashcards</span>
       <span><kbd>S</kbd></span><span>Simulados</span>
       <span><kbd>E</kbd></span><span>Estatísticas</span>
       <span><kbd>M</kbd></span><span>Mini-timer (app de desktop)</span>
@@ -152,7 +159,7 @@
 <dialog id="repDlg" class="dlg">
   <form id="repForm" class="dlg-inner">
     <div class="dlg-head"><h3>Relatório semanal</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
-    <p class="hint">Resumo da semana em PDF: foco por dia, matérias, metas, revisões, simulados e comparação com a semana anterior.</p>
+    <p class="hint">Resumo da semana em PDF: foco por dia, áreas, metas, revisões, simulados e comparação com a semana anterior.</p>
     <div class="fld"><span>Semana</span>
       <div class="seg">
         <label><input type="radio" name="week" value="this" checked><span>Esta semana</span></label>
@@ -173,11 +180,11 @@
     <div class="imp-head"><span class="hint" id="impCount" style="margin:0"></span><button type="button" class="link" id="impAll">marcar/desmarcar todas</button></div>
     <div id="impList" class="imp-list"></div>
     <div class="row2" style="margin-top:14px">
-      <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
-      <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+      <label class="fld"><span>Área</span><select name="subjectId"></select></label>
+      <label class="fld"><span>Tema</span><select name="topicId"></select></label>
     </div>
-    <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-    <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
     <label class="switch"><input type="checkbox" name="asDone"> Contar também como questões feitas hoje (todas erradas)</label>
     <p class="form-err" id="impErr"></p>
     <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary" id="impSubmit">Adicionar ao caderno</button></div>
@@ -196,11 +203,11 @@
       </div>
     </div>
     <div class="row2">
-      <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
-      <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+      <label class="fld"><span>Área</span><select name="subjectId"></select></label>
+      <label class="fld"><span>Tema</span><select name="topicId"></select></label>
     </div>
-    <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-    <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
     <label class="fld"><span>Pomodoros estimados</span><input type="number" name="est" min="1" max="50" value="1"></label>
     <p class="form-err" id="taskErr"></p>
     <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
@@ -213,16 +220,19 @@
     <div class="dlg-head"><h3 id="qDlgTitle">Registrar questões</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
     <label class="fld"><span>Tarefa</span><select name="taskId"></select></label>
     <div class="row2" id="qSubjWrap">
-      <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
-      <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+      <label class="fld"><span>Área</span><select name="subjectId"></select></label>
+      <label class="fld"><span>Tema</span><select name="topicId"></select></label>
     </div>
-    <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-    <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
     <div class="row2">
       <label class="fld"><span>Questões feitas</span><input type="number" name="total" min="1" max="2000" inputmode="numeric"></label>
       <label class="fld"><span>Acertos</span><input type="number" name="correct" min="0" max="2000" inputmode="numeric"></label>
     </div>
-    <label class="fld"><span>Data</span><input type="date" name="date"></label>
+    <div class="row2">
+      <label class="fld"><span>Data</span><input type="date" name="date"></label>
+      <label class="fld"><span>Instituição (opcional)</span><input name="inst" list="instList" maxlength="40" placeholder="Ex.: ENARE" autocomplete="off"></label>
+    </div>
     <div id="qReviewWrap">
       <label class="switch"><input type="checkbox" name="review" checked> Agendar revisão dos erros (1, 7 e 30 dias)</label>
       <label class="fld" style="margin-top:10px"><span>Anotação dos erros (opcional)</span><input name="note" maxlength="300" placeholder="Ex.: confundi ato vinculado com discricionário" autocomplete="off"></label>
@@ -243,11 +253,11 @@
     </div>
     <label class="fld"><span>Duração (minutos)</span><input type="number" name="minutes" min="1" max="1440" inputmode="numeric"></label>
     <div class="row2">
-      <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
-      <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+      <label class="fld"><span>Área</span><select name="subjectId"></select></label>
+      <label class="fld"><span>Tema</span><select name="topicId"></select></label>
     </div>
-    <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-    <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+    <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+    <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
     <div class="fld"><span>Tipo</span>
       <div class="seg">
         <label><input type="radio" name="type" value="estudo" checked><span>Estudo / aula</span></label>
@@ -276,16 +286,38 @@
   </div>
 </dialog>
 
-<!-- Matérias, edital e metas -->
+<!-- Áreas, temas, provas e metas -->
 <dialog id="subjDlg" class="dlg wide" autofocus>
   <div class="dlg-inner">
-    <div class="dlg-head"><h3>Matérias, edital e metas</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
-    <p class="hint">Cada matéria tem seus assuntos (o edital verticalizado) e metas semanais opcionais, que alimentam o ciclo de estudos da tela inicial.</p>
+    <div class="dlg-head"><h3>Áreas, temas e metas</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="subj-top">
+      <section class="sbox" id="examSec">
+        <h4>Provas-alvo</h4>
+        <div id="examList"></div>
+        <form id="examAdd" class="exam-add" novalidate>
+          <input name="name" list="instList" placeholder="Prova (ex.: ENARE)" maxlength="40" autocomplete="off" aria-label="Nome da prova">
+          <input type="date" name="date" aria-label="Data da prova">
+          <button class="btn" type="submit">Adicionar</button>
+        </form>
+      </section>
+      <section class="sbox">
+        <h4>Ciclo de estudos</h4>
+        <p class="hint">Quanto você consegue fazer por semana? O app divide entre as áreas pelo peso na prova e pela dificuldade, e preenche as metas.</p>
+        <form id="cycleForm" class="cycle-form" novalidate>
+          <label class="goal"><input type="number" name="hours" min="0" max="150" step="0.5" placeholder="0" aria-label="Horas por semana"> horas</label>
+          <label class="goal"><input type="number" name="qs" min="0" max="5000" placeholder="0" aria-label="Questões por semana"> questões</label>
+          <button class="btn primary" type="submit">Distribuir metas</button>
+        </form>
+      </section>
+    </div>
     <div id="edSummary"></div>
-    <form id="subjAddForm" class="subj-row">
-      <input name="name" placeholder="Nova matéria" maxlength="60" autocomplete="off">
-      <button class="btn" type="submit">Adicionar matéria</button>
-    </form>
+    <div class="subj-add-row">
+      <form id="subjAddForm" class="subj-row">
+        <input name="name" placeholder="Nova área" maxlength="60" autocomplete="off">
+        <button class="btn" type="submit">Adicionar área</button>
+      </form>
+      <button class="btn" id="btnTemplate" type="button">Carregar as 5 grandes áreas da residência</button>
+    </div>
     <div id="subjCards"></div>
   </div>
 </dialog>
@@ -300,14 +332,15 @@
       <select id="revSubject"></select>
       <button class="btn" id="revAdd">+ Anotar erro</button>
       <button class="btn" id="revImport">Colar questões erradas</button>
+      <button class="btn" id="revCards">Flashcards</button>
     </div>
     <form id="revForm" class="rev-form" hidden>
       <div class="row2">
-        <label class="fld"><span>Matéria</span><select name="subjectId"></select></label>
-        <label class="fld"><span>Assunto</span><select name="topicId"></select></label>
+        <label class="fld"><span>Área</span><select name="subjectId"></select></label>
+        <label class="fld"><span>Tema</span><select name="topicId"></select></label>
       </div>
-      <label class="fld" data-new="subject" hidden><span>Nome da nova matéria</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
-      <label class="fld" data-new="topic" hidden><span>Nome do novo assunto</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+      <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+      <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
       <div class="row2">
         <label class="fld"><span>Questões erradas</span><input type="number" name="wrong" min="0" max="500" value="1"></label>
         <span></span>
@@ -330,6 +363,11 @@
         <label class="fld"><span>Nome</span><input name="name" maxlength="80" placeholder="Ex.: Simulado 3 — banca X" autocomplete="off"></label>
         <label class="fld"><span>Data</span><input type="date" name="date"></label>
       </div>
+      <div class="row2">
+        <label class="fld"><span>Instituição (opcional)</span><input name="inst" list="instList" maxlength="40" placeholder="Ex.: USP-SP" autocomplete="off"></label>
+        <label class="fld"><span>Nota de corte (% , opcional)</span><input type="number" name="cut" min="0" max="100" step="0.1" placeholder="Ex.: 72" inputmode="decimal"></label>
+      </div>
+      <p class="hint" style="margin-top:-4px">A nota usa o peso de cada área (definido em Áreas). Sem pesos, todas valem igual.</p>
       <div id="simRows"></div>
       <p class="form-err" id="simErr"></p>
       <div class="dlg-foot"><button type="button" class="btn" id="simCancel">Cancelar</button><button type="submit" class="btn primary">Salvar simulado</button></div>
@@ -356,6 +394,7 @@
         <label class="fld"><span>Pausa longa</span><input type="number" min="1" max="90" data-set="long"></label>
         <label class="fld"><span>Pausa longa a cada</span><input type="number" min="2" max="12" data-set="longEvery"></label>
         <label class="fld"><span>Meta diária de foco (min)</span><input type="number" min="10" max="1440" step="10" data-set="dailyGoalMin"></label>
+        <label class="fld"><span>Meta diária de questões (0 = sem)</span><input type="number" min="0" max="2000" step="5" data-set="dailyGoalQ"></label>
       </div>
       <div class="switches">
         <label class="switch"><input type="checkbox" data-set="autoBreaks"> Iniciar pausas automaticamente</label>
@@ -384,9 +423,9 @@
     </div>
 
     <div class="set-sec">
-      <h4>Matérias e edital</h4>
-      <p class="hint">Matérias, assuntos, cores e metas semanais ficam numa tela própria.</p>
-      <button class="btn" id="btnOpenSubjects">Abrir matérias e edital</button>
+      <h4>Áreas, temas e provas</h4>
+      <p class="hint">Áreas, temas, incidência, provas-alvo e metas semanais ficam numa tela própria.</p>
+      <button class="btn" id="btnOpenSubjects">Abrir áreas e temas</button>
     </div>
 
     <div class="set-sec" id="desktopSec" hidden>
@@ -423,6 +462,22 @@
       </div>
     </div>
 
+    <div class="set-sec" id="cloudSec">
+      <h4>Sincronizar celular e computador (pela internet)</h4>
+      <p class="hint">Usa a sua conta do GitHub para guardar os dados num arquivo secreto (um "gist"). Faça isto <b>uma vez em cada aparelho</b>, com o mesmo código:</p>
+      <ol class="steps">
+        <li><a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Focus%20sincroniza%C3%A7%C3%A3o" target="_blank" rel="noopener">Criar o código de acesso no GitHub</a> — em "Expiration" escolha "No expiration", deixe marcado só "gist" e clique em "Generate token".</li>
+        <li>Copie o código (começa com <code>ghp_</code>) e cole abaixo.</li>
+      </ol>
+      <div class="backup-row">
+        <input type="password" id="cloudToken" placeholder="ghp_…" autocomplete="off" spellcheck="false" aria-label="Código de acesso do GitHub">
+        <button class="btn primary" id="btnCloudOn">Conectar</button>
+        <button class="btn" id="btnCloudSync">Sincronizar agora</button>
+        <button class="btn" id="btnCloudOff">Desconectar</button>
+      </div>
+      <p class="hint" id="cloudInfo" style="margin-top:8px"></p>
+    </div>
+
     <div class="set-sec" id="installSec" hidden>
       <h4>Instalar no aparelho</h4>
       <p class="hint" id="installHint"></p>
@@ -434,7 +489,9 @@
       <p class="hint" id="dataHint">Tudo fica salvo neste computador. Exporte um backup de vez em quando.</p>
       <div class="btn-row">
         <button class="btn" id="btnExport">Exportar backup</button>
-        <button class="btn" id="btnImport">Importar backup</button>
+        <button class="btn" id="btnImport">Importar backup (substituir)</button>
+        <button class="btn" id="btnMerge">Juntar backup</button>
+        <button class="btn" id="btnCsv">Exportar planilha (CSV)</button>
         <input type="file" id="fileImport" accept="application/json,.json" hidden>
         <button class="btn" id="btnDemo">Carregar dados de exemplo</button>
         <button class="btn danger" id="btnClear">Apagar tudo</button>
@@ -454,12 +511,67 @@
       <div class="filt"><span>Agrupar por</span>
         <div class="seg" id="fGroup"><button data-v="day">Dia</button><button data-v="week">Semana</button><button data-v="month">Mês</button><button data-v="year">Ano</button></div>
       </div>
-      <div class="filt"><span>Matéria</span><select id="fSubject"></select></div>
+      <div class="filt"><span>Área</span><select id="fSubject"></select></div>
     </div>
     <label class="switch"><input type="checkbox" id="fOpen" checked> Incluir tarefas em andamento</label>
     <div id="statsBody"></div>
   </div>
 </dialog>
+
+<!-- Flashcards -->
+<dialog id="cardDlg" class="dlg mid" autofocus>
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Flashcards</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="rev-tools">
+      <div class="seg" id="cardTab"><button data-v="study" class="on">Estudar</button><button data-v="list">Cartões</button><button data-v="import">Importar</button></div>
+      <select id="cardSubject" aria-label="Filtrar por área"></select>
+    </div>
+    <div id="cardStudy"></div>
+    <div id="cardListWrap" hidden>
+      <form id="cardForm" class="rev-form" novalidate>
+        <div class="row2">
+          <label class="fld"><span>Área</span><select name="subjectId"></select></label>
+          <label class="fld"><span>Tema</span><select name="topicId"></select></label>
+        </div>
+        <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+        <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+        <label class="fld"><span>Frente (pergunta)</span><textarea name="front" rows="2" maxlength="1000" placeholder="Ex.: Tríade de Beck no tamponamento cardíaco?"></textarea></label>
+        <label class="fld"><span>Verso (resposta)</span><textarea name="back" rows="3" maxlength="2000" placeholder="Hipotensão, turgência jugular e abafamento de bulhas"></textarea></label>
+        <p class="form-err" id="cardErr"></p>
+        <div class="dlg-foot"><button type="button" class="btn" id="cardCancel" hidden>Cancelar edição</button><button type="submit" class="btn primary" id="cardSubmit">Adicionar cartão</button></div>
+      </form>
+      <div id="cardList"></div>
+    </div>
+    <div id="cardImportWrap" hidden>
+      <form id="cardImpForm" novalidate>
+        <p class="hint">Um cartão por linha, com a frente e o verso separados por <b>tabulação</b> (formato de exportação do Anki), <b>;</b> ou <b>::</b>. Ex.: <code>Antídoto do paracetamol :: N-acetilcisteína</code></p>
+        <label class="fld"><span>Cartões</span><textarea name="text" rows="8" placeholder="Frente :: Verso"></textarea></label>
+        <div class="row2">
+          <label class="fld"><span>Área</span><select name="subjectId"></select></label>
+          <label class="fld"><span>Tema</span><select name="topicId"></select></label>
+        </div>
+        <label class="fld" data-new="subject" hidden><span>Nome da nova área</span><input name="newSubject" maxlength="60" autocomplete="off"></label>
+        <label class="fld" data-new="topic" hidden><span>Nome do novo tema</span><input name="newTopic" maxlength="80" autocomplete="off"></label>
+        <p class="hint" id="cardImpCount"></p>
+        <p class="form-err" id="cardImpErr"></p>
+        <div class="dlg-foot"><button type="submit" class="btn primary">Importar cartões</button></div>
+      </form>
+    </div>
+  </div>
+</dialog>
+
+<!-- Anotações do tema -->
+<dialog id="noteDlg" class="dlg">
+  <form id="noteForm" class="dlg-inner" novalidate>
+    <div class="dlg-head"><h3 id="noteTitle">Anotações</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <p class="hint" id="noteSub"></p>
+    <label class="fld"><span>Resumo, pontos-chave e links (aulas, PDFs, diretrizes)</span><textarea name="notes" rows="9" maxlength="5000"></textarea></label>
+    <div class="note-links" id="noteLinks"></div>
+    <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+  </form>
+</dialog>
+
+<datalist id="instList"></datalist>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="upd" id="updBar" role="status" hidden>Nova versão do Focus disponível <button class="btn primary sm" id="updBtn">Atualizar</button></div>
@@ -476,6 +588,9 @@
 <script src="js/sync.js"></script>
 <script src="js/report.js"></script>
 <script src="js/import.js"></script>
+<script src="js/residency.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/cloud.js"></script>
 <script src="js/dash.js"></script>
 <script src="js/app.js"></script>
 </body>

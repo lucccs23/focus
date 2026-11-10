@@ -10,19 +10,22 @@
    - Mudanças nos dois lados ao mesmo tempo: junta os registros pelos ids
      (nada se perde; algo excluído só de um lado pode reaparecer).
    ============================================================ */
-const SYNC_ARRAYS = ['subjects', 'tasks', 'sessions', 'questions', 'reviews', 'simulados'];
+const SYNC_ARRAYS = ['subjects', 'tasks', 'sessions', 'questions', 'reviews', 'simulados', 'cards'];
 
 const Sync = {
   _t: null,
   _busy: false,
 
   available() { return !!window.desktop?.syncRead; },
-  enabled() { const s = Store.data.settings; return this.available() && s.syncOn && !!s.syncDir; },
+  // pela internet (GitHub) em qualquer aparelho; pela pasta só no app de desktop
+  folderOn() { const s = Store.data.settings; return this.available() && s.syncOn && !!s.syncDir; },
+  enabled() { return Cloud.connected() || this.folderOn(); },
+  read() { return Cloud.connected() ? Cloud.read() : window.desktop.syncRead(Store.data.settings.syncDir); },
+  write(json) { return Cloud.connected() ? Cloud.write(json) : window.desktop.syncWrite(Store.data.settings.syncDir, json); },
 
   init() {
     const s = Store.data.settings;
     if (!s.deviceId) { s.deviceId = uid(); Store.save(); }
-    if (!this.available()) return;
     // run() não faz nada enquanto a sincronização estiver desligada
     this.run();
     setInterval(() => this.run(), 60000);
@@ -43,7 +46,7 @@ const Sync = {
     this._busy = true;
     let s = Store.data.settings;
     try {
-      const res = await window.desktop.syncRead(s.syncDir);
+      const res = await this.read();
       if (!res.ok) throw new Error(res.error);
       let remote = null;
       if (res.json) { try { remote = JSON.parse(res.json); } catch { throw new Error('o arquivo da nuvem está corrompido'); } }
@@ -55,10 +58,10 @@ const Sync = {
         const merged = this.dirty();
         if (merged) {
           this.apply(this.merge(Store.data, remote), { keepDirty: true });
-          if (manual) App.toast('Dados dos dois computadores foram combinados');
+          if (manual) App.toast('Dados dos dois aparelhos foram combinados');
         } else {
           this.apply(remote, { keepDirty: false });
-          App.toast('Dados atualizados com o outro computador');
+          App.toast('Dados atualizados com o outro aparelho');
         }
         s = Store.data.settings; // apply() troca o objeto de preferências
         s.syncSeenAt = remote.updatedAt || Date.now();
@@ -79,7 +82,7 @@ const Sync = {
       if (manual) App.toast(`Falha ao sincronizar: ${s.syncError}`);
     } finally {
       this._busy = false;
-      if ($('#settingsDlg').open) Settings.fillSync();
+      if ($('#settingsDlg').open) { Settings.fillSync(); Cloud.fill(); }
     }
   },
 
@@ -90,7 +93,7 @@ const Sync = {
     const at = Store.data.updatedAt;
     const rev = uid();
     const payload = { ...Store.shared(), app: 'focus', deviceId: s.deviceId, updatedAt: at, rev };
-    const res = await window.desktop.syncWrite(s.syncDir, JSON.stringify(payload));
+    const res = await this.write(JSON.stringify(payload));
     if (!res.ok) throw new Error(res.error);
     s.syncSeenAt = at;
     s.syncSeenRev = rev;

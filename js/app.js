@@ -38,6 +38,9 @@ const App = {
     Sims.init();
     Report.init();
     Importer.init();
+    Plan.init();
+    Cards.init();
+    Cloud.bind();
     Dash.init();
     Settings.bind();
     Timer.init();
@@ -70,6 +73,7 @@ const App = {
     $('#btnSubjects').onclick = () => Subjects.open();
     $('#btnReviews').onclick = () => Reviews.open();
     $('#btnSims').onclick = () => Sims.open();
+    $('#btnCards').onclick = () => Cards.open();
     $('#btnSound').onclick = (e) => Sound.menu(e.currentTarget);
     $('#btnKeys').onclick = () => $('#keysDlg').showModal();
     $('#btnReport').onclick = () => Report.open();
@@ -164,7 +168,7 @@ const App = {
       ' ': () => Timer.toggle(), n: () => this.skip(), r: () => this.stop(),
       e: () => Stats.open(), t: () => this.openTask(), m: () => window.desktop?.toggleMini(), q: () => this.openQ({ taskId: Store.activeTask()?.id }),
       '?': () => $('#keysDlg').showModal(),
-      h: () => History.open(Date.now()), d: () => Subjects.open(), c: () => Reviews.open(), s: () => Sims.open(),
+      h: () => History.open(Date.now()), d: () => Subjects.open(), c: () => Reviews.open(), s: () => Sims.open(), f: () => Cards.open(),
       1: () => Timer.setMode('pomodoro'), 2: () => Timer.setMode('short'), 3: () => Timer.setMode('long'), 4: () => Timer.setMode('stopwatch'),
     };
     if (map[k]) { e.preventDefault(); this.closeMenu(); map[k](); }
@@ -245,10 +249,15 @@ const App = {
     this.renderToday();
     Week.render();
     Reviews.renderPanel();
+    Plan.render();
     Dash.render();
+    const cd = Cards.due().length, cb = $('#cardBadge');
+    cb.hidden = !cd;
+    cb.textContent = cd > 99 ? '99+' : cd;
     Store.save();
     if (Stats.isOpen()) Stats.render();
     if (Subjects.isOpen()) Subjects.render();
+    if (Cards.isOpen()) Cards.render();
   },
 
   set(sel, prop, val) { // evita mexer no DOM sem necessidade (render a cada 250ms)
@@ -313,14 +322,16 @@ const App = {
     const qt = sum(qs, (q) => q.total), qc = sum(qs, (q) => q.correct);
     const goal = d.settings.dailyGoalMin * 60000;
     const pct = Math.min(100, (focus / goal) * 100);
+    const gq = +d.settings.dailyGoalQ || 0, pq = gq ? Math.min(100, (qt / gq) * 100) : 0;
     $('#today').innerHTML = `
       <div class="today-row">
         <span><b>Hoje</b></span>
         <span><b>${pomos}</b> pomodoro${pomos === 1 ? '' : 's'}</span>
         <span><b>${Fmt.dur(focus)}</b> de foco · meta ${Fmt.dur(goal)}</span>
-        <span><b>${Fmt.int(qt)}</b> questões${qt ? ` · ${Fmt.pct(qc / qt)} de acerto` : ''}</span>
+        <span><b>${Fmt.int(qt)}</b> questões${gq ? ` · meta ${Fmt.int(gq)}` : ''}${qt ? ` · ${Fmt.pct(qc / qt)} de acerto` : ''}</span>
       </div>
-      <div class="bar" title="${Math.round(pct)}% da meta diária"><i style="width:${pct.toFixed(1)}%"></i></div>`;
+      <div class="bar" title="${Math.round(pct)}% da meta diária de foco"><i style="width:${pct.toFixed(1)}%"></i></div>
+      ${gq ? `<div class="bar bar-q" title="${Math.round(pq)}% da meta diária de questões"><i style="width:${pq.toFixed(1)}%"></i></div>` : ''}`;
   },
 
   renderTasks() {
@@ -336,7 +347,7 @@ const App = {
       .sort((a, b) => (a.done - b.done) || (a.createdAt - b.createdAt));
     const el = $('#taskList');
     if (!list.length) {
-      el.innerHTML = `<li class="empty">${d.tasks.some((t) => !t.archived) ? 'Todas as tarefas estão concluídas.' : 'Nenhuma tarefa ainda. Crie uma para vincular o tempo de foco e as questões a uma matéria.'}</li>`;
+      el.innerHTML = `<li class="empty">${d.tasks.some((t) => !t.archived) ? 'Todas as tarefas estão concluídas.' : 'Nenhuma tarefa ainda. Crie uma para vincular o tempo de foco e as questões a uma área.'}</li>`;
       return;
     }
     el.innerHTML = list.map((t) => {
@@ -378,7 +389,7 @@ const App = {
     if (t.done && Store.data.activeTaskId === t.id) Store.data.activeTaskId = null;
     // concluir uma tarefa de estudo com assunto marca a teoria do assunto como estudada
     const topic = Store.topic(t.topicId);
-    if (t.done && t.type === 'estudo' && topic && !topic.studied) { topic.studied = true; this.toast(`“${topic.name}” marcado como estudado no edital`); }
+    if (t.done && t.type === 'estudo' && topic && !topic.studied) { topic.studied = true; this.toast(`“${topic.name}” marcado como estudado`); }
     this.renderAll();
     if (t.done && t.type === 'questoes' && !Store.data.questions.some((q) => q.taskId === t.id)) this.openQ({ taskId: t.id });
   },
@@ -435,7 +446,7 @@ const App = {
     let title = f.title.value.trim();
     // sem título: usa "Estudo de Matéria — Assunto"
     if (!title && pick.subjectId) title = `${f.type.value === 'questoes' ? 'Questões' : 'Estudo'} de ${Store.label(pick.subjectId, pick.topicId).replace(' · ', ' — ')}`;
-    if (!title) return err('Dê um título para a tarefa (ou escolha uma matéria).', f.title);
+    if (!title) return err('Dê um título para a tarefa (ou escolha uma área).', f.title);
     const est = Math.min(50, Math.max(1, Math.round(+f.est.value || 1)));
     const type = f.type.value === 'questoes' ? 'questoes' : 'estudo';
     const d = Store.data;
@@ -467,6 +478,8 @@ const App = {
     f.total.value = q ? q.total : '';
     f.correct.value = q ? q.correct : '';
     f.date.value = D.key(q ? q.date : date ?? Date.now());
+    f.inst.value = q ? q.inst || '' : this._lastInst || '';
+    Plan.refreshInst?.();
     f.review.checked = true;
     f.note.value = '';
     $('#qReviewWrap').hidden = !!q;
@@ -509,15 +522,17 @@ const App = {
       ({ subjectId, topicId } = pick);
     }
     const d = Store.data;
+    const inst = f.inst.value.trim().slice(0, 40);
+    this._lastInst = inst;
     const q = d.questions.find((x) => x.id === this.editingQId);
     if (q) {
       const date = f.date.value === D.key(q.date) ? q.date : D.fromKey(f.date.value) + 12 * 3600000;
-      Object.assign(q, { taskId: t?.id ?? null, subjectId: subjectId ?? null, topicId: topicId ?? null, total, correct, date });
+      Object.assign(q, { taskId: t?.id ?? null, subjectId: subjectId ?? null, topicId: topicId ?? null, total, correct, date, inst });
       d.reviews.forEach((r) => { if (r.qId === q.id && !r.done) Object.assign(r, { wrong: total - correct, subjectId: q.subjectId, topicId: q.topicId }); });
       this.toast('Registro atualizado');
     } else {
       const date = f.date.value === D.key(Date.now()) ? Date.now() : D.fromKey(f.date.value) + 12 * 3600000;
-      const nq = { id: uid(), date, taskId: t?.id ?? null, subjectId: subjectId ?? null, topicId: topicId ?? null, total, correct };
+      const nq = { id: uid(), date, taskId: t?.id ?? null, subjectId: subjectId ?? null, topicId: topicId ?? null, total, correct, inst };
       d.questions.push(nq);
       const note = f.note.value.trim();
       const rv = f.review.checked ? Store.scheduleReview({ subjectId: nq.subjectId, topicId: nq.topicId, wrong: total - correct, note, from: date, qId: nq.id }) : null;
@@ -607,7 +622,7 @@ const Backup = {
     if (this._busy) return;
     this._busy = true;
     try {
-      const json = JSON.stringify({ ...Store.data, exportedAt: new Date().toISOString() });
+      const json = JSON.stringify(Settings.exportable());
       const res = await dk.writeBackup(s.backupDir, json);
       if (res?.ok) {
         s.lastBackupKey = key;
@@ -647,6 +662,7 @@ const Settings = {
     $('#btnDemo').textContent = Store.hasDemo() ? 'Remover dados de exemplo' : 'Carregar dados de exemplo';
     $('#desktopSec').hidden = !window.desktop;
     this.fillInstall();
+    Cloud.fill();
     $('#wakeWrap').hidden = !!window.desktop || !navigator.wakeLock;
     $('#dataHint').textContent = window.desktop
       ? 'Tudo fica salvo neste computador. Exporte um backup de vez em quando.'
@@ -709,8 +725,10 @@ const Settings = {
     };
 
     $('#btnExport').onclick = () => this.exportData();
-    $('#btnImport').onclick = () => $('#fileImport').click();
-    $('#fileImport').onchange = (e) => this.importData(e.target.files[0]).finally(() => { e.target.value = ''; });
+    $('#btnImport').onclick = () => { this._merge = false; $('#fileImport').click(); };
+    $('#btnMerge').onclick = () => { this._merge = true; $('#fileImport').click(); };
+    $('#btnCsv').onclick = () => this.exportCsv();
+    $('#fileImport').onchange = (e) => this.importData(e.target.files[0], this._merge).finally(() => { e.target.value = ''; });
     $('#btnDemo').onclick = () => {
       if (Store.hasDemo()) { Store.removeDemo(); App.toast('Dados de exemplo removidos'); }
       else { Store.seedDemo(); App.toast('Dados de exemplo carregados — abra as estatísticas'); }
@@ -794,16 +812,21 @@ const Settings = {
     Notification.requestPermission().then((p) => { if (p !== 'granted') deny('Permissão de notificação negada'); });
   },
 
-  async exportData() {
-    const data = { ...Store.data, exportedAt: new Date().toISOString() };
-    const name = `focus-backup-${D.key(Date.now())}.json`;
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  // cópia dos dados para backup/exportação, sem o código de acesso do GitHub
+  exportable() {
+    const data = { ...Store.data, settings: { ...Store.data.settings }, exportedAt: new Date().toISOString() };
+    delete data.settings.cloudToken;
+    return data;
+  },
+
+  // baixa (ou compartilha, no celular) um arquivo
+  async saveFile(blob, name, title) {
     const touch = window.matchMedia?.('(hover: none)').matches;
     if (!window.desktop && touch && typeof File === 'function') {
-      const file = new File([blob], name, { type: 'application/json' });
+      const file = new File([blob], name, { type: blob.type });
       if (navigator.canShare?.({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: 'Backup do Focus' }); return; }
-        catch (e) { if (e.name === 'AbortError') return; } // se falhar, baixa o arquivo
+        try { await navigator.share({ files: [file], title }); return; }
+        catch (e) { if (e.name === 'AbortError') return; }
       }
     }
     const a = document.createElement('a');
@@ -813,11 +836,52 @@ const Settings = {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   },
 
-  async importData(file) {
+  // planilha única (abre no Excel): uma linha por sessão, registro de questões ou área de simulado
+  exportCsv() {
+    const d = Store.data;
+    const cell = (v) => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const dt = (ts) => D.ddmmyy(ts).replace(/\/(\d\d)$/, (m, y) => `/20${y}`);
+    const rows = [['Tipo', 'Data', 'Hora', 'Área', 'Tema', 'Minutos de foco', 'Questões', 'Acertos', '% acerto', 'Instituição', 'Tarefa / simulado']];
+    d.sessions.slice().sort((a, b) => a.start - b.start).forEach((s) => rows.push([
+      s.manual ? 'Tempo manual' : s.mode === 'stopwatch' ? 'Cronômetro' : 'Pomodoro', dt(s.start), Fmt.time(s.start),
+      Store.subjectName(s.subjectId), s.topicId ? Store.topicName(s.topicId) : '', Math.round(s.ms / 60000), '', '', '', '', Store.task(s.taskId)?.title || '']));
+    d.questions.slice().sort((a, b) => a.date - b.date).forEach((q) => rows.push([
+      'Questões', dt(q.date), Fmt.time(q.date), Store.subjectName(q.subjectId), q.topicId ? Store.topicName(q.topicId) : '', '',
+      q.total, q.correct, q.total ? Fmt.dec((q.correct / q.total) * 100) : '', q.inst || '', Store.task(q.taskId)?.title || '']));
+    d.simulados.slice().sort((a, b) => a.date - b.date).forEach((sim) => sim.rows.forEach((r) => rows.push([
+      'Simulado', dt(sim.date), Fmt.time(sim.date), Store.subjectName(r.subjectId), '', '', r.total, r.correct,
+      r.total ? Fmt.dec((r.correct / r.total) * 100) : '', sim.inst || '', sim.name])));
+    const csv = '\ufeff' + rows.map((r) => r.map(cell).join(';')).join('\r\n');
+    this.saveFile(new Blob([csv], { type: 'text/csv' }), `focus-registros-${D.key(Date.now())}.csv`, 'Registros do Focus');
+  },
+
+  async exportData() {
+    const data = this.exportable();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    this.saveFile(blob, `focus-backup-${D.key(Date.now())}.json`, 'Backup do Focus');
+  },
+
+  async importData(file, merge = false) {
     if (!file) return;
     try {
       const d = JSON.parse(await file.text());
       if (!d || !Array.isArray(d.tasks) || !Array.isArray(d.sessions)) throw new Error('formato');
+      if (merge) {
+        if (!confirm(`Juntar o backup com os dados atuais?\nNada daqui é apagado; o que só existe no backup é adicionado.\n${d.sessions.length} sessões · ${(d.questions || []).length} registros de questões no arquivo`)) return;
+        delete d.exportedAt;
+        const cur = Store.data;
+        const out = Sync.merge(cur, Store.normalize(d));
+        out.settings = { ...cur.settings }; // preferências deste aparelho continuam as mesmas
+        out.timer = cur.timer;
+        out.activeTaskId = cur.activeTaskId;
+        delete out.deviceId; delete out.app; delete out.rev;
+        Store.data = Store.normalize(out);
+        Timer.init();
+        this.fill();
+        App.renderAll();
+        App.toast('Backup juntado aos dados deste aparelho');
+        return;
+      }
       if (!confirm(`Substituir os dados atuais pelo backup?\n${d.tasks.length} tarefas · ${d.sessions.length} sessões · ${(d.questions || []).length} registros de questões`)) return;
       delete d.exportedAt;
       const cur = Store.data;
