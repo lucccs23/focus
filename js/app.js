@@ -41,6 +41,9 @@ const App = {
     Sims.init();
     Report.init();
     Importer.init();
+    Edital.init();
+    Essay.init();
+    College.init();
     Plan.init();
     Cards.init();
     Cloud.bind();
@@ -108,7 +111,8 @@ const App = {
     const qf = $('#qForm');
     Pick.bind(qf);
     qf.taskId.onchange = () => this.syncQForm();
-    qf.total.oninput = qf.correct.oninput = () => this.syncQForm();
+    qf.total.oninput = qf.correct.oninput = qf.blank.oninput = () => this.syncQForm();
+    qf.ce.onchange = () => { $('#qBlankWrap').hidden = !qf.ce.checked; this.syncQForm(); };
     qf.onsubmit = (e) => { e.preventDefault(); this.saveQuestions(); };
 
     document.addEventListener('keydown', (e) => this.onKey(e));
@@ -271,6 +275,7 @@ const App = {
     Week.render();
     Reviews.renderPanel();
     Plan.render();
+    College.render();
     Dash.render();
     const cd = Cards.due().length, cb = $('#cardBadge');
     cb.hidden = !cd;
@@ -512,6 +517,9 @@ const App = {
     f.total.value = q ? q.total : useQc ? qc.c + qc.w : '';
     f.correct.value = q ? q.correct : useQc ? qc.c : '';
     f.date.value = D.key(q ? q.date : date ?? Date.now());
+    f.ce.checked = q ? !!q.ce : Profile.has('ce') && !!Store.data.settings.ceDefault;
+    f.blank.value = q?.blank || '';
+    $('#qBlankWrap').hidden = !f.ce.checked;
     f.inst.value = q ? q.inst || '' : this._lastInst || '';
     Plan.refreshInst?.();
     f.review.checked = true;
@@ -546,6 +554,9 @@ const App = {
     if (!(total >= 1)) return err('Informe quantas questões você fez.', f.total);
     if (f.correct.value === '' || correct < 0) return err('Informe quantas você acertou.', f.correct);
     if (correct > total) return err('Os acertos não podem passar do total de questões.', f.correct);
+    const ce = !!f.ce.checked && Profile.has('ce');
+    const blank = ce ? Math.max(0, Math.round(+f.blank.value || 0)) : 0;
+    if (correct + blank > total) return err('Acertos + em branco passam do total de questões.', f.blank);
     if (!f.date.value) return err('Escolha a data.', f.date);
     const t = Store.task(f.taskId.value);
     let subjectId, topicId;
@@ -561,17 +572,17 @@ const App = {
     const q = d.questions.find((x) => x.id === this.editingQId);
     if (q) {
       const date = f.date.value === D.key(q.date) ? q.date : D.fromKey(f.date.value) + 12 * 3600000;
-      Object.assign(q, { taskId: t?.id ?? null, subjectId: subjectId ?? null, topicId: topicId ?? null, total, correct, date, inst });
-      d.reviews.forEach((r) => { if (r.qId === q.id && !r.done) Object.assign(r, { wrong: total - correct, subjectId: q.subjectId, topicId: q.topicId }); });
+      Object.assign(q, { taskId: t?.id ?? null, subjectId: subjectId ?? null, topicId: topicId ?? null, total, correct, date, inst, ce, blank });
+      d.reviews.forEach((r) => { if (r.qId === q.id && !r.done) Object.assign(r, { wrong: qWrong(q), subjectId: q.subjectId, topicId: q.topicId }); });
       this.toast('Registro atualizado');
     } else {
       const date = f.date.value === D.key(Date.now()) ? Date.now() : D.fromKey(f.date.value) + 12 * 3600000;
-      const nq = { id: uid(), date, taskId: t?.id ?? null, subjectId: subjectId ?? null, topicId: topicId ?? null, total, correct, inst };
+      const nq = { id: uid(), date, taskId: t?.id ?? null, subjectId: subjectId ?? null, topicId: topicId ?? null, total, correct, inst, ce, blank };
       d.questions.push(nq);
       const note = f.note.value.trim();
-      const rv = f.review.checked ? Store.scheduleReview({ subjectId: nq.subjectId, topicId: nq.topicId, wrong: total - correct, note, from: date, qId: nq.id }) : null;
+      const rv = f.review.checked ? Store.scheduleReview({ subjectId: nq.subjectId, topicId: nq.topicId, wrong: qWrong(nq), note, from: date, qId: nq.id }) : null;
       if (Timer.qc().task && Timer.qc().task === nq.taskId) Timer.resetCount();
-      this.toast(`Registrado: ${total} questões · ${Fmt.pct(correct / total)}${rv ? ` · revisão em ${D.ddmm(rv.due)}` : ''}`);
+      this.toast(`Registrado: ${total} questões · ${ce ? `líquida ${Fmt.pct(qNet(nq) / total)}` : Fmt.pct(correct / total)}${rv ? ` · revisão em ${D.ddmm(rv.due)}` : ''}`);
     }
     $('#qDlg').close();
     this.renderAll();
@@ -681,6 +692,7 @@ const Settings = {
     this.fillInstall();
     Cloud.fill();
     Profile.renderSelect();
+    Profile.renderExtras();
     $('#shareUrl').textContent = appUrl();
     Custom.renderLook();
     Custom.renderNav();
@@ -751,6 +763,14 @@ const Settings = {
     $('#btnImport').onclick = () => { this._merge = false; $('#fileImport').click(); };
     $('#btnMerge').onclick = () => { this._merge = true; $('#fileImport').click(); };
     $('#btnCsv').onclick = () => this.exportCsv();
+    $('#profExtra').onchange = (e) => {
+      const k = e.target.dataset.extra; if (!k) return;
+      const s = Store.data.settings;
+      s.profileExtra = e.target.checked ? [...new Set([...(s.profileExtra || []), k])] : (s.profileExtra || []).filter((x) => x !== k);
+      Store.save(); Profile.apply(); App.renderAll(); this.fill();
+    };
+    $('#btnCloseSem').onclick = () => { College.closeSemester(); this.fill(); };
+    $('#btnEssays2').onclick = () => { $('#settingsDlg').close(); Essay.open(); };
     $('#profileSel').onchange = (e) => {
       if (!e.target.value) return;
       Profile.set(e.target.value);
@@ -831,8 +851,10 @@ const Settings = {
       if (k === 'closeToTray') window.desktop?.setPrefs?.({ closeToTray: i.checked });
       if (k === 'syncOn' && i.checked) { if (!s.syncDir) $('#btnSyncDir').click(); else Sync.run({ manual: true }); }
       if (k === 'autoBackup' && i.checked) { if (!s.backupDir) $('#btnBackupDir').click(); else Backup.run(false); }
+    } else if (i.type === 'text') {
+      s[k] = i.value.trim().slice(0, 20);
     } else {
-      let v = Math.round(Number(i.value));
+      let v = String(i.step).includes('.') ? Math.round(Number(i.value) * 10) / 10 : Math.round(Number(i.value));
       const min = i.min !== '' ? +i.min : 1, max = i.max !== '' ? +i.max : 9999;
       if (!Number.isFinite(v)) v = s[k];
       v = Math.min(max, Math.max(min, v));

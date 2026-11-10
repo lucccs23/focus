@@ -65,7 +65,7 @@ const Importer = {
     if (banca) meta.banca = banca[1].trim().slice(0, 60);
     // instituição/banca: rótulo "Instituição:/Prova:" ou um nome conhecido (do perfil de estudo) no texto
     const lab = block.match(/(?:institui[çc][ãa]o|prova|concurso)\s*[:\-]\s*(.+?)(?=\s+(?:ano|banca|[óo]rg[ãa]o|disciplina|cargo)\s*[:\-]|\s*\||\n|$)/i);
-    const known = Profile.get().insts().find((n) => new RegExp(`(^|[^\\wÀ-ú])${n.replace(/[-]/g, '[-\\s]?')}(?![\\wÀ-ú])`, 'i').test(block));
+    const known = Profile.instsAll().find((n) => new RegExp(`(^|[^\\wÀ-ú])${n.replace(/[-]/g, '[-\\s]?')}(?![\\wÀ-ú])`, 'i').test(block));
     if (known) meta.inst = known;
     else if (lab) meta.inst = lab[1].trim().slice(0, 40);
     else if (meta.banca) meta.inst = meta.banca;

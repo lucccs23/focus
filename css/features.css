@@ -174,7 +174,7 @@ p.empty { margin: 0; }
 }
 @media (hover: none) {
   /* toque: alvos maiores e sem lista de atalhos de teclado */
-  .foot .link, .foot kbd { display: none; }
+  .foot .k-only { display: none; } /* atalhos de teclado não servem no toque */
   .kebab { width: 36px; height: 36px; }
   .ctrl { width: 48px; height: 48px; }
   .chk { width: 26px; height: 26px; }

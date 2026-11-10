@@ -18,7 +18,7 @@ const Pick = {
   },
 
   fill(form, subjectId, topicId) {
-    const subs = Store.data.subjects;
+    const subs = Store.activeSubjects();
     form.subjectId.innerHTML = `<option value="">Sem ${T.s}</option>`
       + subs.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')
       + `<option value="__new">+ Nova ${T.s}…</option>`;
@@ -78,7 +78,7 @@ const Subjects = {
       if (Store.addSubject(inp.value, { weight: 1, diff: 2 })) { inp.value = ''; this.changed(); }
     };
     $('#btnTemplate').onclick = () => {
-      const { ns, nt } = Plan.loadTemplate();
+      const { ns, nt } = Plan.loadTemplate(Profile.variant($('#tplSel').value));
       App.toast(ns || nt ? `Modelo carregado: ${ns} ${T.s}(s) e ${nt} ${T.p}(s) novos` : 'O modelo já estava carregado');
       this.changed();
     };
@@ -170,10 +170,11 @@ const Subjects = {
     if (!card) return;
     const s = Store.subject(card.dataset.id);
     if (!s) return;
+    if (College.onChange(e, s)) { this.changed(); return; }
     const f = e.target.dataset.f, tf = e.target.dataset.t;
     if (f === 'name') { const n = e.target.value.trim(); if (n) s.name = n; else e.target.value = s.name; }
     if (f === 'color') s.color = e.target.value;
-    if (f === 'weight') s.weight = Math.max(1, Math.min(5, +e.target.value || 1));
+    if (f === 'weight') { s.weight = Math.max(0.1, Math.min(100, Math.round((+e.target.value || 1) * 10) / 10)); e.target.value = s.weight; }
     if (f === 'diff') s.diff = Math.max(1, Math.min(3, +e.target.value || 2));
     if (f === 'goalH' || f === 'goalQ') {
       const v = Math.max(0, Math.min(f === 'goalH' ? 100 : 5000, f === 'goalH' ? Math.round((+e.target.value || 0) * 2) / 2 : Math.round(+e.target.value || 0)));
@@ -190,10 +191,13 @@ const Subjects = {
   },
 
   onClick(e) {
+    const re = e.target.closest('[data-reopen]');
+    if (re) return College.reopen(re.dataset.reopen);
     const card = e.target.closest('.scard');
     if (!card) return;
     const s = Store.subject(card.dataset.id);
     if (!s) return;
+    if (College.onClick(e, s)) { this.changed(); return; }
     const d = Store.data;
     const note = e.target.closest('[data-note]');
     if (note) return this.openNote(note.closest('tr').dataset.tid);
@@ -232,13 +236,15 @@ const Subjects = {
     if (!this.isOpen()) return;
     this.renderExams();
     Plan.refreshInst?.();
-    const subs = Store.data.subjects;
+    const subs = Store.activeSubjects();
     const qBy = Plan.topicStats();
     const allT = subs.flatMap((s) => s.topics);
     const st = allT.filter((t) => t.studied).length, rv = allT.filter((t) => t.reviewed).length;
-    const tl = Profile.get().templateLabel;
-    $('#btnTemplate').hidden = !tl;
-    if (tl) $('#btnTemplate').textContent = subs.length ? `Completar com ${tl}` : `Carregar ${tl}`;
+    const vs = Profile.variants(), sel = $('#tplSel'), cur = sel.value;
+    $('#tplPick').hidden = !vs.length;
+    sel.innerHTML = vs.map(([id, label]) => `<option value="${id}">${esc(label)}</option>`).join('');
+    if (vs.some((v) => v[0] === cur)) sel.value = cur;
+    $('#btnTemplate').textContent = subs.length ? 'Completar com o modelo' : 'Carregar modelo';
     $('#edSummary').innerHTML = allT.length ? `
       <div class="ed-sum">
         <div><b>${Math.round((st / allT.length) * 100)}%</b> dos ${T.pp} estudados <span class="muted">· ${st} de ${allT.length} ${T.pp} · ${rv} revisados</span></div>
@@ -257,7 +263,7 @@ const Subjects = {
           <button class="kebab" data-del-subj title="Excluir ${T.s}" aria-label="Excluir ${T.s}">×</button>
         </div>
         <div class="scard-goals">
-          <label class="goal">Peso na prova <select data-f="weight" aria-label="Peso">${[1, 2, 3, 4, 5].map((v) => `<option${(+s.weight || 1) === v ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label class="goal" title="Use 1 a 5, ou a % de questões dela na prova (ex.: 20)">Peso na prova <input type="number" min="0" max="100" step="0.5" value="${+s.weight || 1}" data-f="weight" aria-label="Peso na prova"></label>
           <label class="goal">Dificuldade <select data-f="diff" aria-label="Dificuldade">${opt(DIFF, s.diff || 2)}</select></label>
           <label class="goal">Meta/semana <input type="number" min="0" max="100" step="0.5" value="${s.goalH || ''}" placeholder="0" data-f="goalH" aria-label="Horas por semana"> h</label>
           <label class="goal"><input type="number" min="0" max="5000" value="${s.goalQ || ''}" placeholder="0" data-f="goalQ" aria-label="Questões por semana"> questões</label>
@@ -273,9 +279,19 @@ const Subjects = {
             <td><button class="kebab note-btn${t.notes ? ' has' : ''}" data-note title="${t.notes ? 'Ver anotações' : 'Anotações e links'}" aria-label="Anotações">${noteIco}</button></td>
             <td><button class="kebab" data-del-topic title="Excluir ${T.p}" aria-label="Excluir ${T.p}">×</button></td></tr>`; }).join('')}
         </tbody></table></div>` : ''}
+        ${Profile.has('college') ? College.cardHtml(s) : ''}
         <form class="tadd"><textarea name="names" rows="1" placeholder="Novo ${T.p} — ou cole uma lista, um por linha"></textarea><button class="btn" type="submit">Adicionar</button></form>
       </div>`;
     }).join('') : `<p class="empty">Nenhuma ${T.s} ainda. ${Profile.get().templateLabel ? 'Carregue o modelo pronto acima ou adicione' : 'Adicione'} a primeira.</p>`;
+    // semestres anteriores (faculdade)
+    const old = Store.data.subjects.filter((x) => x.archived);
+    if (old.length) {
+      const by = new Map();
+      old.forEach((x) => { const k = x.semester || 'anteriores'; if (!by.has(k)) by.set(k, []); by.get(k).push(x); });
+      $('#subjCards').insertAdjacentHTML('beforeend', `<details class="old-sem"><summary>Semestres anteriores (${old.length} ${old.length === 1 ? T.s : T.ss})</summary>
+        ${[...by.entries()].map(([k, xs]) => `<h4>${esc(k)}</h4>${xs.map((x) => `<div class="old-row"><span class="tag" style="--c:${Store.subjectColor(x.id)}">${esc(x.name)}</span>
+          <small>${College.statusText(x)}</small><button class="btn sm" data-reopen="${x.id}">Reabrir</button></div>`).join('')}`).join('')}</details>`);
+    }
   },
 };
 
@@ -288,7 +304,7 @@ const Week = {
     const f = new Map(), q = new Map();
     Store.data.sessions.forEach((s) => { if (s.end >= ws && s.subjectId) f.set(s.subjectId, (f.get(s.subjectId) || 0) + s.ms); });
     Store.allQuestions().forEach((x) => { if (x.date >= ws && x.subjectId) q.set(x.subjectId, (q.get(x.subjectId) || 0) + x.total); });
-    return Store.data.subjects.filter((s) => s.goalH > 0 || s.goalQ > 0).map((s) => {
+    return Store.activeSubjects().filter((s) => s.goalH > 0 || s.goalQ > 0).map((s) => {
       const fh = f.get(s.id) || 0, nq = q.get(s.id) || 0;
       const parts = [];
       if (s.goalH > 0) parts.push(Math.min(1, fh / (s.goalH * 3600000)));

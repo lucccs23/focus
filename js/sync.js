@@ -10,7 +10,7 @@
    - Mudanças nos dois lados ao mesmo tempo: junta os registros pelos ids
      (nada se perde; algo excluído só de um lado pode reaparecer).
    ============================================================ */
-const SYNC_ARRAYS = ['subjects', 'tasks', 'sessions', 'questions', 'reviews', 'simulados', 'cards'];
+const SYNC_ARRAYS = ['subjects', 'tasks', 'sessions', 'questions', 'reviews', 'simulados', 'cards', 'essays'];
 
 const Sync = {
   _t: null,

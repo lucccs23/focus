@@ -74,7 +74,7 @@ button, .seg label, .switch, summary, .task, .imp-item { touch-action: manipulat
   .app { max-width: 1320px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
   .topbar, .foot { grid-column: 1 / -1; }
   .timer-card { grid-column: 1; grid-row: 2 / span 5; position: sticky; top: max(20px, env(safe-area-inset-top)); }
-  .today, #exams, #week, #reviewsToday, .tasks, #dash { grid-column: 2; }
+  .today, #exams, #college, #week, #reviewsToday, .tasks, #dash { grid-column: 2; }
   #dash { margin: 16px 0 0; }
   .today { margin: 0 0 16px; }
   .panel { margin: 0 0 16px; }
@@ -317,3 +317,68 @@ body.zen .mode-tabs { margin-left: 0; margin-right: 0; }
 .guide h4:first-of-type { margin-top: 0; }
 .guide p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--muted); }
 .guide p b { color: var(--text); }
+
+/* ---------- v1.2: funções por perfil ---------- */
+body:not(.f-ce) .ce-only, body:not(.f-essay) .essay-only, body:not(.f-college) .college-only { display: none !important; }
+#qBlankWrap[hidden] { display: none; }
+.tpl-pick { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.tpl-pick select { width: auto; max-width: 320px; }
+.tpl-pick[hidden] { display: none; }
+
+/* simulados: colunas conforme o modo */
+.sim-grid { display: grid; grid-template-columns: minmax(110px, 1fr) 80px 80px; gap: 8px 10px; align-items: center; }
+#simRows.ce .sim-grid { grid-template-columns: minmax(110px, 1fr) 80px 80px 80px; }
+.sim-grid.with-score { grid-template-columns: minmax(110px, 1fr) 80px 80px 90px; }
+#simRows.ce .sim-grid.with-score { grid-template-columns: minmax(110px, 1fr) 72px 72px 72px 84px; }
+#simRows:not(.ce) .sim-blank { display: none; }
+
+/* colar edital */
+.ed-list { display: grid; gap: 8px; max-height: 340px; overflow: auto; }
+.ed-item { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.ed-item .switch { margin: 6px 0 0; }
+.ed-main { flex: 1; display: grid; gap: 6px; min-width: 0; }
+.ed-main details summary { cursor: pointer; font-size: 12.5px; color: var(--c-focus); }
+.ed-main ol { margin: 6px 0 0; padding-left: 20px; font-size: 12.5px; color: var(--muted); display: grid; gap: 2px; }
+.ed-target + .ed-name[hidden] { display: none; }
+
+/* redações */
+.comp-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.comp-grid .fld > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comp-list { display: grid; gap: 8px; }
+.comp { display: grid; grid-template-columns: 34px minmax(140px, 1.2fr) 1fr 40px; gap: 10px; align-items: center; font-size: 13px; }
+.comp b { color: var(--c-focus); }
+.comp .bar { margin: 0; }
+.comp.weak-c span:nth-child(2) { color: var(--err); font-weight: 600; }
+@media (max-width: 520px) { .comp { grid-template-columns: 30px 1fr 40px; } .comp .bar { grid-column: 2 / -1; grid-row: 2; } }
+
+/* faculdade */
+.col-box { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.col-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; margin-bottom: 6px; }
+.col-st { font-size: 12.5px; color: var(--muted); }
+.col-st b { color: var(--text); }
+.grades { display: grid; gap: 6px; margin-bottom: 4px; }
+.grade { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.grade input[data-g=name] { flex: 1 1 120px; width: auto; padding: 5px 8px; font-size: 13px; }
+.grade label { display: inline-flex; gap: 5px; align-items: center; }
+.grade input[type=number] { width: 66px; padding: 5px 6px; font-size: 13px; }
+.abs-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.abs-ctl { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.abs-ctl b { min-width: 20px; text-align: center; color: var(--text); font-size: 15px; }
+.warn { color: var(--c-watch); font-weight: 600; }
+.col-rows { display: grid; gap: 8px; }
+.col-row { display: grid; grid-template-columns: minmax(0, auto) 1fr auto; gap: 4px 12px; align-items: center; font-size: 13px; }
+.col-row small { color: var(--muted); font-size: 12.5px; }
+.col-row small b { color: var(--text); }
+.col-abs { font-size: 12.5px; color: var(--muted); display: inline-flex; gap: 8px; align-items: center; }
+@media (max-width: 520px) { .col-row { grid-template-columns: 1fr auto; } .col-row small { grid-column: 1 / -1; } }
+.old-sem { margin-top: 12px; }
+.old-sem summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.old-sem h4 { margin: 10px 0 6px; font-size: 12.5px; color: var(--muted); }
+.old-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 4px 0; font-size: 13px; }
+.old-row small { flex: 1; color: var(--muted); }
+/* notas da faculdade: uma linha por avaliação */
+.grade { display: grid; grid-template-columns: minmax(64px, 1fr) auto auto 32px; gap: 6px 8px; }
+.grade input[data-g=name] { width: 100%; min-width: 0; }
+.grade label { font-size: 11.5px; gap: 4px; }
+@media (max-width: 520px) { .grade input[type=number] { width: 54px; padding: 6px 5px; } }
+

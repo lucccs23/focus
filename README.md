@@ -52,6 +52,12 @@ npm run shortcuts
 - **Revisões editáveis**: os intervalos do caderno de erros (padrão 1, 7 e 30 dias) podem ser trocados, ex.: 1, 3, 7, 15, 30.
 - **Assistente de início**: na primeira abertura num aparelho sem dados, três passos (áreas, provas e ciclo).
 - **Perfil de estudo**: residência médica, concursos, ENEM e vestibulares, faculdade ou outro — muda os nomes usados no app, o modelo pronto e as sugestões de provas/bancas.
+- **Mais de um perfil** (Ajustes → "Também estudo para"): soma as funções e os modelos de outros perfis, ex.: faculdade e concurso.
+- **Modelos prontos** (tela de matérias): residência resumida (68 temas) ou detalhada (~160), concurso (básicas, tribunais, policial, fiscal, bancário, INSS), ENEM, FUVEST e vestibular de Medicina. O peso de cada matéria pode ser de 1 a 5 ou a % de questões na prova.
+- **Colar edital**: cola o conteúdo programático e o app separa as matérias (títulos em maiúsculas) e os assuntos (itens numerados), com ou sem os subitens.
+- **Concursos — certo/errado**: registros e simulados com questões em branco e **nota líquida** (cada erro anula um acerto), também nas estatísticas.
+- **ENEM — redação**: notas por competência (C1 a C5), evolução e a competência mais fraca; simulados com nota de 0 a 1000 por área.
+- **Faculdade**: notas com pesos (média atual e **quanto precisa tirar** para passar), **controle de faltas** com aviso perto do limite e **semestres** (encerrar e reabrir).
 - **Tarefas** de estudo ou de questões, ligadas a área e tema.
 - **Áreas, temas e metas** (`D`):
   - modelo pronto conforme o perfil: **5 grandes áreas da residência**, **matérias básicas de concurso** ou **áreas do ENEM**, com os temas e a incidência de cada um;

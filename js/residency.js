@@ -52,7 +52,7 @@ const Plan = {
   init() {
     // lista de instituições para todos os campos com list="instList"
     this.refreshInst = () => {
-      const used = new Set(Profile.get().insts());
+      const used = new Set(Profile.instsAll());
       [...Store.data.questions, ...Store.data.simulados, ...(Store.data.settings.exams || [])].forEach((x) => { const n = x.inst || x.name; if (n) used.add(n); });
       $('#instList').innerHTML = [...used].map((x) => `<option value="${esc(x)}">`).join('');
     };
@@ -64,9 +64,9 @@ const Plan = {
   },
 
   /* ---------- modelo das grandes áreas ---------- */
-  loadTemplate() {
+  loadTemplate(data = Profile.template()) {
     let ns = 0, nt = 0;
-    (Profile.template() || []).forEach(([name, color, topics]) => {
+    (data || []).forEach(([name, color, topics]) => {
       const before = Store.data.subjects.length;
       const s = Store.addSubject(name, { color, weight: 1, diff: 2 });
       if (Store.data.subjects.length > before) ns++;
@@ -86,7 +86,7 @@ const Plan = {
   daysTo(ts) { return Math.round((D.sod(ts) - D.sod(Date.now())) / DAY); },
 
   pace(exam) {
-    const topics = Store.data.subjects.flatMap((s) => s.topics);
+    const topics = Store.activeSubjects().flatMap((s) => s.topics);
     const total = topics.length, studied = topics.filter((t) => t.studied).length;
     const days = Math.max(0, this.daysTo(exam.date));
     const weeks = Math.max(1, days / 7);
@@ -109,7 +109,7 @@ const Plan = {
   // Temas para atacar primeiro: muito cobrados com acerto baixo, ou de alta incidência ainda não estudados.
   weak(limit = 5) {
     const st = this.topicStats(), out = [];
-    Store.data.subjects.forEach((s) => s.topics.forEach((t) => {
+    Store.activeSubjects().forEach((s) => s.topics.forEach((t) => {
       const w = INC[t.inc]?.w || 1.5;
       const x = st.get(t.id);
       if (x && x.q >= 5) {

@@ -93,7 +93,7 @@ const Report = {
     const gy = H - 24 - (r.goal / maxF) * (H - 40);
     bars += `<line x1="0" x2="${W}" y1="${gy}" y2="${gy}" stroke="#9a968e" stroke-dasharray="4 4"/><text x="${W}" y="${gy - 4}" text-anchor="end" class="m">meta diária ${Fmt.dur(r.goal)}</text>`;
 
-    const goals = Store.data.subjects.filter((s) => s.goalH > 0 || s.goalQ > 0);
+    const goals = Store.activeSubjects().filter((s) => s.goalH > 0 || s.goalQ > 0);
     const goalRow = (s) => {
       const x = r.subj.find((y) => y.id === s.id) || { f: 0, q: 0 };
       return `<tr><td><i style="background:${Store.subjectColor(s.id)}"></i>${esc(s.name)}</td>

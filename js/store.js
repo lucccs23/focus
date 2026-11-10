@@ -13,6 +13,9 @@ const TOUCH = !!window.matchMedia?.('(hover: none)').matches;
 const TAP = TOUCH ? 'toque' : 'clique';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = (arr, fn) => arr.reduce((a, x) => a + (fn(x) || 0), 0);
+// questões erradas (o que ficou em branco não conta como erro) e nota líquida do certo/errado (cada erro anula um acerto)
+const qWrong = (q) => Math.max(0, q.total - q.correct - (q.blank || 0));
+const qNet = (q) => q.correct - qWrong(q);
 
 const Fmt = {
   // contagem regressiva: arredonda para cima (mostra 25:00 no início, 00:01 no último segundo)
@@ -66,6 +69,7 @@ const DEFAULT_SETTINGS = {
   presets: [], reviewSteps: [1, 7, 30],
   accent: '', clockFont: 'thin', ringStyle: 'ring', fontScale: 1, alarmFocus: 'chime', alarmBreak: 'soft', alarmVol: 60,
   navHidden: [], home: null, onboardDone: false, profile: '', weekStart: 1,
+  profileExtra: [], ceDefault: true, passGrade: 7, absLimit: 25, semester: '',
   syncOn: false, syncDir: '', deviceId: '', lastSyncAt: 0, syncSeenAt: 0,
   bgSound: 'none', bgVolume: 35, bgOnlyFocus: true,
   closeToTray: false, autoBackup: false, backupDir: '', lastBackupKey: '',
@@ -80,7 +84,7 @@ const Store = {
   fresh() {
     return {
       version: 2, settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), subjects: [], tasks: [], activeTaskId: null,
-      sessions: [], questions: [], reviews: [], simulados: [], cards: [], timer: null,
+      sessions: [], questions: [], reviews: [], simulados: [], cards: [], essays: [], timer: null,
     };
   },
 
@@ -92,10 +96,10 @@ const Store = {
       ...f, ...d,
       settings: { ...f.settings, ...(d.settings || {}) },
       subjects: arr(d.subjects), tasks: arr(d.tasks), sessions: arr(d.sessions), questions: arr(d.questions),
-      reviews: arr(d.reviews), simulados: arr(d.simulados), cards: arr(d.cards),
+      reviews: arr(d.reviews), simulados: arr(d.simulados), cards: arr(d.cards), essays: arr(d.essays),
     };
     // matérias: assuntos (tópicos do edital) e metas semanais
-    out.subjects.forEach((s) => { s.topics = arr(s.topics); s.goalH = +s.goalH || 0; s.goalQ = +s.goalQ || 0; s.weight = +s.weight || 1; s.diff = +s.diff || 2; });
+    out.subjects.forEach((s) => { s.topics = arr(s.topics); s.goalH = +s.goalH || 0; s.goalQ = +s.goalQ || 0; s.weight = +s.weight || 1; s.diff = +s.diff || 2; s.grades = arr(s.grades); });
     ['exams', 'presets', 'navHidden'].forEach((k) => { if (!Array.isArray(out.settings[k])) out.settings[k] = []; });
     return out;
   },
@@ -133,6 +137,8 @@ const Store = {
   resetBaseline() { this._shared = this.sharedJSON(); },
 
   subject(id) { return id ? this.data.subjects.find((s) => s.id === id) || null : null; },
+  // matérias em uso (as de semestres encerrados ficam guardadas, mas fora das listas)
+  activeSubjects() { return this.data.subjects.filter((s) => !s.archived); },
   task(id) { return id ? this.data.tasks.find((t) => t.id === id) || null : null; },
   subjectName(id) { return this.subject(id)?.name || `Sem ${T.s}`; },
   // só aceita cor no formato #rrggbb (o valor vai direto para o HTML)
@@ -151,7 +157,7 @@ const Store = {
   addSubject(name, extra = {}) {
     const n = String(name || '').trim();
     if (!n) return null;
-    const ex = this.data.subjects.find((s) => s.name.toLowerCase() === n.toLowerCase());
+    const ex = this.data.subjects.find((s) => !s.archived && s.name.toLowerCase() === n.toLowerCase());
     if (ex) return ex;
     const s = { id: uid(), name: n, color: PALETTE[this.data.subjects.length % PALETTE.length], topics: [], goalH: 0, goalQ: 0, ...extra };
     this.data.subjects.push(s);
@@ -172,7 +178,7 @@ const Store = {
   allQuestions() {
     const out = this.data.questions.slice();
     this.data.simulados.forEach((sim) => sim.rows.forEach((r, i) => {
-      if (r.total > 0) out.push({ id: `${sim.id}_${i}`, date: sim.date, subjectId: r.subjectId || null, topicId: null, taskId: null, total: r.total, correct: r.correct, simId: sim.id, inst: sim.inst || '' });
+      if (r.total > 0) out.push({ id: `${sim.id}_${i}`, date: sim.date, subjectId: r.subjectId || null, topicId: null, taskId: null, total: r.total, correct: r.correct, blank: r.blank || 0, ce: !!sim.ce, simId: sim.id, inst: sim.inst || '' });
     }));
     return out;
   },
@@ -185,7 +191,7 @@ const Store = {
     return r;
   },
 
-  hasDemo() { return ['sessions', 'questions', 'simulados', 'cards'].some((k) => this.data[k].some((x) => x.demo)); },
+  hasDemo() { return ['sessions', 'questions', 'simulados', 'cards', 'essays'].some((k) => this.data[k].some((x) => x.demo)); },
 
   seedDemo() {
     // exemplo conforme o perfil de estudo: o modelo pronto dele (ou um genérico), 4 assuntos por matéria
@@ -253,6 +259,17 @@ const Store = {
         rows: subs.map((s) => { const total = 20; return { subjectId: s.id, total, correct: Math.round(total * (0.55 + (56 - i) / 300 + Math.random() * 0.2)) }; }),
       });
     }
+    // redações (ENEM) e notas/faltas (faculdade), quando o perfil usa
+    if (Profile.has('essay')) for (let i = 8; i >= 1; i--) {
+      const base = 520 + (8 - i) * 45;
+      this.data.essays.push({ id: uid(), date: D.addDays(today, -i * 6) + 15 * 3600000, theme: `Tema ${9 - i}`, demo: true,
+        c: [0, 1, 2, 3, 4].map((k) => Math.min(200, Math.max(40, Math.round((base / 5 + (k === 4 ? -40 : k === 1 ? 20 : 0) + rnd(-30, 30)) / 40) * 40))) });
+    }
+    if (Profile.has('college')) subs.forEach((s, k) => {
+      if (s.grades?.length) return;
+      s.grades = [{ id: uid(), name: 'P1', w: 3, v: [6.5, 8, 5.5][k % 3] }, { id: uid(), name: 'P2', w: 3, v: null }, { id: uid(), name: 'Trabalho', w: 2, v: [9, 7, 8][k % 3] }, { id: uid(), name: 'Listas', w: 2, v: null }];
+      s.classes = 60; s.absences = [3, 9, 13][k % 3];
+    });
     // alguns flashcards
     (Profile.key() === 'residencia' ? [['Tríade de Beck (tamponamento cardíaco)?', 'Hipotensão, turgência jugular e abafamento de bulhas', 0, 0],
       ['Antídoto da intoxicação por paracetamol?', 'N-acetilcisteína', 0, 3],
@@ -271,6 +288,7 @@ const Store = {
     d.reviews = d.reviews.filter((x) => !x.demo);
     d.simulados = d.simulados.filter((x) => !x.demo);
     d.cards = d.cards.filter((x) => !x.demo);
+    d.essays = d.essays.filter((x) => !x.demo);
     const used = new Set([...d.tasks, ...d.sessions, ...d.questions].map((x) => x.subjectId));
     d.subjects = d.subjects.filter((s) => !s.demo || used.has(s.id));
     this.save();

@@ -41,7 +41,7 @@
       </button>
       <button class="icon-btn nav-btn" id="btnSubjects" title="Áreas, temas, provas e metas (D)" data-term-title="{SS}, {pp}, provas e metas (D)" aria-label="Áreas e temas" data-term-aria="{SS} e {pp}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/></svg>
-        <span class="nav-lbl"><span data-term="{SS}">Áreas</span></span>
+        <span class="nav-lbl"><span data-term="{nav}">Áreas</span></span>
       </button>
       <button class="icon-btn nav-btn" id="btnReviews" title="Caderno de erros e revisões (C)" aria-label="Caderno de erros">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>
@@ -116,6 +116,7 @@
 
   <section class="today" id="today"></section>
   <section class="panel" id="exams" hidden></section>
+  <section class="panel" id="college" hidden></section>
   <section class="panel" id="week" hidden></section>
   <section class="panel" id="reviewsToday" hidden></section>
 
@@ -132,7 +133,7 @@
 
   <section class="panel dash" id="dash" hidden></section>
 
-  <footer class="foot">Focus v1.1 · <button class="link" id="btnGuide">Guia rápido</button> · <button class="link" id="btnHome">Personalizar tela inicial</button> · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></footer>
+  <footer class="foot">Focus v1.2 · <button class="link" id="btnGuide">Guia rápido</button> · <button class="link" id="btnHome">Personalizar tela inicial</button><span class="k-only"> · <button class="link" id="btnKeys">Atalhos do teclado</button> <kbd>?</kbd></span></footer>
 </div>
 
 <!-- Atalhos -->
@@ -240,6 +241,10 @@
       <label class="fld"><span>Questões feitas</span><input type="number" name="total" min="1" max="2000" inputmode="numeric"></label>
       <label class="fld"><span>Acertos</span><input type="number" name="correct" min="0" max="2000" inputmode="numeric"></label>
     </div>
+    <div class="ce-only">
+      <label class="switch"><input type="checkbox" name="ce"> Certo/errado: cada erro anula um acerto</label>
+      <label class="fld" id="qBlankWrap" hidden style="margin-top:10px"><span>Deixadas em branco</span><input type="number" name="blank" min="0" max="2000" inputmode="numeric" placeholder="0"></label>
+    </div>
     <div class="row2">
       <label class="fld"><span>Data</span><input type="date" name="date"></label>
       <label class="fld"><span><span data-term="{I} (opcional)">Instituição (opcional)</span></span><input name="inst" list="instList" maxlength="40" placeholder="Ex.: ENARE" data-term-ph="Ex.: {inst}" autocomplete="off"></label>
@@ -313,7 +318,7 @@
       </section>
       <section class="sbox">
         <h4>Ciclo de estudos</h4>
-        <p class="hint"><span data-term="Quanto você consegue fazer por semana? O app divide entre as {ss} pelo peso na prova e pela dificuldade, e preenche as metas.">Quanto você consegue fazer por semana? O app divide entre as áreas pelo peso na prova e pela dificuldade, e preenche as metas.</span></p>
+        <p class="hint"><span data-term="Quanto você consegue fazer por semana? O app divide entre as {ss} pelo peso na prova e pela dificuldade, e preenche as metas. Peso: 1 a 5, ou a % de questões na prova.">Quanto você consegue fazer por semana? O app divide entre as áreas pelo peso na prova e pela dificuldade, e preenche as metas. Peso: 1 a 5, ou a % de questões na prova.</span></p>
         <form id="cycleForm" class="cycle-form" novalidate>
           <label class="goal"><input type="number" name="hours" min="0" max="150" step="0.5" placeholder="0" aria-label="Horas por semana"> horas</label>
           <label class="goal"><input type="number" name="qs" min="0" max="5000" placeholder="0" aria-label="Questões por semana"> questões</label>
@@ -327,7 +332,8 @@
         <input name="name" placeholder="Nova área" data-term-ph="Nova {s}" maxlength="60" autocomplete="off">
         <button class="btn" type="submit"><span data-term="Adicionar {s}">Adicionar área</span></button>
       </form>
-      <button class="btn" id="btnTemplate" type="button">Carregar modelo</button>
+      <button class="btn" id="btnEdital" type="button">Colar edital / conteúdo</button>
+      <span class="tpl-pick" id="tplPick"><select id="tplSel" aria-label="Modelo pronto"></select><button class="btn" id="btnTemplate" type="button">Carregar modelo</button></span>
     </div>
     <div id="subjCards"></div>
   </div>
@@ -368,7 +374,7 @@
 <dialog id="simDlg" class="dlg wide" autofocus>
   <div class="dlg-inner">
     <div class="dlg-head"><h3>Simulados</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
-    <div class="rev-tools"><span class="hint" style="margin:0">As questões dos simulados também entram nas estatísticas.</span><span class="grow"></span><button class="btn primary" id="simNew">+ Novo simulado</button></div>
+    <div class="rev-tools"><span class="hint" style="margin:0">As questões dos simulados também entram nas estatísticas.</span><span class="grow"></span><button class="btn essay-only" id="btnEssays">Redações</button><button class="btn primary" id="simNew">+ Novo simulado</button></div>
     <form id="simForm" class="rev-form" hidden novalidate>
       <div class="row2">
         <label class="fld"><span>Nome</span><input name="name" maxlength="80" placeholder="Ex.: Simulado 3 — banca X" autocomplete="off"></label>
@@ -378,6 +384,7 @@
         <label class="fld"><span><span data-term="{I} (opcional)">Instituição (opcional)</span></span><input name="inst" list="instList" maxlength="40" placeholder="Ex.: USP-SP" data-term-ph="Ex.: {sim}" autocomplete="off"></label>
         <label class="fld"><span>Nota de corte (% , opcional)</span><input type="number" name="cut" min="0" max="100" step="0.1" placeholder="Ex.: 72" inputmode="decimal"></label>
       </div>
+      <label class="switch ce-only" style="margin:-4px 0 12px"><input type="checkbox" name="ce"> Certo/errado: cada erro anula um acerto</label>
       <p class="hint" style="margin-top:-4px"><span data-term="A nota usa o peso de cada {s} (definido em {SS}). Sem pesos, todas valem igual.">A nota usa o peso de cada área (definido em Áreas). Sem pesos, todas valem igual.</span></p>
       <div id="simRows"></div>
       <p class="form-err" id="simErr"></p>
@@ -396,6 +403,21 @@
       <h4>Perfil de estudo</h4>
       <label class="fld" style="max-width:320px"><span>Para que você estuda?</span><select id="profileSel"></select></label>
       <p class="hint">Muda os nomes usados no app (área, matéria, disciplina…), o modelo pronto e as sugestões de provas e bancas. Seus dados não mudam.</p>
+      <h4 style="margin-top:14px">Também estudo para</h4>
+      <p class="hint">Soma as funções e os modelos dos outros perfis (ex.: faculdade e concurso ao mesmo tempo). Os nomes seguem o perfil principal.</p>
+      <div class="switches nav-items" id="profExtra"></div>
+      <div class="ce-only" style="margin-top:12px">
+        <label class="switch"><input type="checkbox" data-set="ceDefault"> Começar os registros de questões no modo certo/errado</label>
+      </div>
+      <div class="college-only" style="margin-top:12px">
+        <div class="set-grid">
+          <label class="fld"><span>Média para passar</span><input type="number" min="0" max="10" step="0.1" data-set="passGrade"></label>
+          <label class="fld"><span>Limite de faltas (%)</span><input type="number" min="1" max="100" data-set="absLimit"></label>
+          <label class="fld"><span>Semestre atual</span><input type="text" maxlength="20" placeholder="Ex.: 2026.2" data-set="semester"></label>
+        </div>
+        <div class="btn-row"><button class="btn" id="btnCloseSem">Encerrar semestre…</button></div>
+      </div>
+      <div class="essay-only btn-row" style="margin-top:12px"><button class="btn" id="btnEssays2">Abrir redações</button></div>
     </div>
 
     <div class="set-sec">
@@ -633,6 +655,38 @@
   </form>
 </dialog>
 
+<!-- Redações -->
+<dialog id="essayDlg" class="dlg wide">
+  <div class="dlg-inner">
+    <div class="dlg-head"><h3>Redações</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <div class="rev-tools"><span class="hint" style="margin:0">Notas por competência, como no ENEM (0 a 200 cada).</span><span class="grow"></span><button class="btn primary" id="essayNew">+ Nova redação</button></div>
+    <form id="essayForm" class="rev-form" hidden novalidate>
+      <div class="row2">
+        <label class="fld"><span>Data</span><input type="date" name="date"></label>
+        <label class="fld"><span>Tema</span><input name="theme" maxlength="140" placeholder="Tema da redação" autocomplete="off"></label>
+      </div>
+      <div class="set-grid comp-grid" id="essayComps"></div>
+      <label class="fld"><span>Comentários da correção (opcional)</span><input name="note" maxlength="600" autocomplete="off"></label>
+      <div class="dlg-foot"><b id="essaySum" class="grow"></b><button type="button" class="btn" id="essayCancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+    </form>
+    <div id="essayBody"></div>
+    <div id="essayList"></div>
+  </div>
+</dialog>
+
+<!-- Colar edital -->
+<dialog id="editalDlg" class="dlg mid">
+  <form id="editalForm" class="dlg-inner" novalidate>
+    <div class="dlg-head"><h3>Colar edital / conteúdo programático</h3><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <label class="fld"><span>Texto do conteúdo programático</span><textarea name="text" rows="8" placeholder="LÍNGUA PORTUGUESA: 1 Compreensão e interpretação de textos. 2 Ortografia oficial. 3 Emprego da crase…&#10;NOÇÕES DE INFORMÁTICA: 1 Sistema operacional Windows. 2 Editores de texto…"></textarea></label>
+    <label class="switch"><input type="checkbox" name="sub"> Incluir os subitens (1.1, 1.2…) como assuntos separados</label>
+    <p class="hint" id="editalCount" style="margin:10px 0 6px"></p>
+    <div id="editalList" class="ed-list"></div>
+    <p class="form-err" id="editalErr"></p>
+    <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Adicionar</button></div>
+  </form>
+</dialog>
+
 <!-- Personalizar tela inicial -->
 <dialog id="homeDlg" class="dlg mid">
   <div class="dlg-inner">
@@ -710,6 +764,10 @@
 <script src="js/sync.js"></script>
 <script src="js/report.js"></script>
 <script src="js/import.js"></script>
+<script src="js/edital.js"></script>
+<script src="js/essay.js"></script>
+<script src="js/college.js"></script>
+<script src="js/templates.js"></script>
 <script src="js/residency.js"></script>
 <script src="js/profile.js"></script>
 <script src="js/cards.js"></script>

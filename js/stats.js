@@ -114,6 +114,7 @@ const Stats = {
     return {
       start, end, days, B, best,
       q: sum(qs, (x) => x.total), c: sum(qs, (x) => x.correct),
+      ceT: sum(qs.filter((x) => x.ce), (x) => x.total), ceNet: sum(qs.filter((x) => x.ce), qNet), ceBlank: sum(qs.filter((x) => x.ce), (x) => x.blank || 0),
       hist: sum(Store.allQuestions().filter((x) => this.qOk(x)), (x) => x.total),
       activeDays: qDays.length,
       focus: sum(ss, (s) => s.ms),
@@ -158,7 +159,7 @@ const Stats = {
     const rangeTxt = st.range === 'all' ? 'Todo o histórico' : st.range === 365 ? 'Últimos 12 meses' : `Últimos ${st.range} dias`;
     const subjTxt = st.subject === 'all' ? `todas as ${T.ss}` : st.subject === 'none' ? `sem ${T.s}` : Store.subjectName(st.subject);
     const kpi = (l, v, s) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
-    const e = r.q - r.c;
+    const e = r.q - r.c - r.ceBlank;
 
     $('#statsBody').innerHTML = `
       <p class="stats-sub">${rangeTxt} · agrupado por ${gl} · ${esc(subjTxt)}</p>
@@ -168,6 +169,7 @@ const Stats = {
         ${kpi('Acertos', Fmt.int(r.c), 'certas')}
         ${kpi('Erros', Fmt.int(e), 'erradas')}
         ${kpi('% de acerto', r.q ? Fmt.pct(r.c / r.q) : '—', 'média do intervalo')}
+        ${r.ceT ? kpi('Nota líquida', Fmt.pct(r.ceNet / r.ceT), `certo/errado · ${Fmt.int(r.ceT)} questões · ${Fmt.int(r.ceBlank)} em branco`) : ''}
         ${kpi('Média por dia ativo', r.activeDays ? Fmt.dec(r.q / r.activeDays) : '—', `${r.activeDays} dia${r.activeDays === 1 ? '' : 's'} com questões`)}
         ${kpi('Média por dia (geral)', Fmt.dec(r.q / r.days), `considera ${r.days} dias`)}
         ${kpi('Melhor dia', r.best ? Fmt.int(r.best.q) : '—', r.best ? `${D.weekday(D.fromKey(r.best.k))} · ${D.ddmmyy(D.fromKey(r.best.k))}` : 'sem registros')}

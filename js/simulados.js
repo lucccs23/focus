@@ -45,16 +45,22 @@ const Sims = {
     f.inst.value = sim?.inst || '';
     f.cut.value = sim?.cut ?? '';
     Plan.refreshInst?.();
-    const ids = Store.data.subjects.map((s) => s.id);
+    const ids = Store.activeSubjects().map((s) => s.id);
     (sim?.rows || []).forEach((r) => { if (!ids.includes(r.subjectId)) ids.push(r.subjectId); });
     const val = (sid, k) => { const r = sim?.rows.find((x) => x.subjectId === sid); return r && r.total ? r[k] : ''; };
+    f.ce.checked = sim ? !!sim.ce : Profile.has('ce') && !!Store.data.settings.ceDefault;
+    const sc = Profile.has('enemScore');
     $('#simRows').innerHTML = ids.length ? `
-      <div class="sim-grid">
-        <span class="muted">${T.S}</span><span class="muted">Questões</span><span class="muted">Acertos</span>
+      <div class="sim-grid${sc ? ' with-score' : ''}">
+        <span class="muted">${T.S}</span><span class="muted">Questões</span><span class="muted">Acertos</span><span class="muted sim-blank">Em branco</span>${sc ? '<span class="muted" title="Nota de 0 a 1000, como no ENEM">Nota</span>' : ''}
         ${ids.map((sid) => `<span class="tag" style="--c:${Store.subjectColor(sid)}">${esc(Store.subjectName(sid))}</span>
           <input type="number" min="0" max="500" data-sid="${sid || ''}" data-k="total" value="${val(sid, 'total')}" aria-label="Questões">
-          <input type="number" min="0" max="500" data-sid="${sid || ''}" data-k="correct" value="${val(sid, 'correct')}" aria-label="Acertos">`).join('')}
+          <input type="number" min="0" max="500" data-sid="${sid || ''}" data-k="correct" value="${val(sid, 'correct')}" aria-label="Acertos">
+          <input type="number" min="0" max="500" class="sim-blank" data-sid="${sid || ''}" data-k="blank" value="${val(sid, 'blank') || ''}" aria-label="Em branco">${sc ? `
+          <input type="number" min="0" max="1000" step="0.1" data-sid="${sid || ''}" data-k="score" value="${sim?.rows.find((x) => x.subjectId === sid)?.score ?? ''}" aria-label="Nota de 0 a 1000">` : ''}`).join('')}
       </div>` : `<p class="hint">Cadastre suas ${T.ss} em “${T.SS}” para lançar a nota por ${T.s}.</p>`;
+    $('#simRows').classList.toggle('ce', f.ce.checked);
+    f.ce.onchange = () => $('#simRows').classList.toggle('ce', f.ce.checked);
     $('#simErr').textContent = '';
     f.hidden = false;
     f.name.focus();
@@ -71,14 +77,18 @@ const Sims = {
     $$('#simRows input').forEach((i) => {
       const k = i.dataset.sid;
       if (!bySid.has(k)) bySid.set(k, {});
-      bySid.get(k)[i.dataset.k] = i.value === '' ? null : Math.round(+i.value);
+      bySid.get(k)[i.dataset.k] = i.value === '' ? null : i.dataset.k === 'score' ? Math.round(+i.value * 10) / 10 : Math.round(+i.value);
     });
     for (const [sid, v] of bySid) {
       if (v.total < 0 || v.correct < 0) return err(`Em ${Store.subjectName(sid)}, use números positivos.`);
-      if (!v.total) { if (v.correct) return err(`Em ${Store.subjectName(sid)}, informe também o total de questões.`); continue; }
-      const correct = v.correct ?? 0;
-      if (correct > v.total) return err(`Em ${Store.subjectName(sid)}, os acertos passam do total.`);
-      rows.push({ subjectId: sid || null, total: v.total, correct });
+      if (!v.total) { if (v.correct || v.score) return err(`Em ${Store.subjectName(sid)}, informe também o total de questões.`); continue; }
+      const correct = v.correct ?? 0, blank = f.ce.checked ? v.blank || 0 : 0;
+      if (blank < 0 || (v.score != null && (v.score < 0 || v.score > 1000))) return err(`Em ${Store.subjectName(sid)}, confira os números.`);
+      if (correct + blank > v.total) return err(`Em ${Store.subjectName(sid)}, acertos${blank ? ' + em branco' : ''} passam do total.`);
+      const row = { subjectId: sid || null, total: v.total, correct };
+      if (blank) row.blank = blank;
+      if (v.score != null) row.score = v.score;
+      rows.push(row);
     }
     if (!rows.length) return err(`Preencha as questões de pelo menos uma ${T.s}.`);
     const date = f.date.value === D.key(Date.now()) ? Date.now() : D.fromKey(f.date.value) + 12 * 3600000;
@@ -86,8 +96,9 @@ const Sims = {
     const cut = f.cut.value === '' ? null : Math.max(0, Math.min(100, Math.round(+f.cut.value * 10) / 10));
     if (f.cut.value !== '' && !Number.isFinite(cut)) return err('Nota de corte inválida.');
     const sim = Store.data.simulados.find((s) => s.id === this.editId);
-    if (sim) Object.assign(sim, { name, date, rows, inst, cut });
-    else Store.data.simulados.push({ id: uid(), name, date, rows, inst, cut });
+    const ce = !!f.ce.checked;
+    if (sim) Object.assign(sim, { name, date, rows, inst, cut, ce });
+    else Store.data.simulados.push({ id: uid(), name, date, rows, inst, cut, ce });
     f.hidden = true;
     App.renderAll();
     this.render();
@@ -100,13 +111,17 @@ const Sims = {
   w(sid) { return +Store.subject(sid)?.weight || 1; },
   score(s) {
     let num = 0, den = 0;
-    s.rows.forEach((r) => { const w = this.w(r.subjectId); num += w * r.correct; den += w * r.total; });
+    s.rows.forEach((r) => { const w = this.w(r.subjectId); num += w * (s.ce ? qNet(r) : r.correct); den += w * r.total; });
     return den ? num / den : null;
   },
+  // média das notas de 0 a 1000 (ENEM), quando lançadas
+  enem(s) { const sc = s.rows.filter((r) => r.score != null); return sc.length ? sum(sc, (r) => r.score) / sc.length : null; },
   // pontos percentuais perdidos em cada área (onde mais custou)
   losses(s) {
     const den = sum(s.rows, (r) => this.w(r.subjectId) * r.total);
-    return den ? s.rows.map((r) => ({ sid: r.subjectId, lost: (this.w(r.subjectId) * (r.total - r.correct) / den) * 100, r })).filter((x) => x.lost > 0).sort((a, b) => b.lost - a.lost) : [];
+    // no certo/errado, cada erro custa dois pontos (o dele e o acerto que anula) e o branco, um
+    const lost = (r) => (s.ce ? 2 * qWrong(r) + (r.blank || 0) : r.total - r.correct);
+    return den ? s.rows.map((r) => ({ sid: r.subjectId, lost: (this.w(r.subjectId) * lost(r) / den) * 100, r })).filter((x) => x.lost > 0).sort((a, b) => b.lost - a.lost) : [];
   },
 
   render() {
@@ -126,6 +141,7 @@ const Sims = {
       return `<span class="${dd >= 0 ? 'up' : 'down'}">${dd >= 0 ? 'acima' : 'abaixo'} (${dd >= 0 ? '+' : ''}${Fmt.dec(dd)} p.p.)</span>`;
     };
     const loss = this.losses(last).slice(0, 5);
+    const hasEnem = sims.some((s) => this.enem(s) != null);
 
     // evolução por área (últimos 6)
     const recent = sims.slice(-6);
@@ -136,7 +152,7 @@ const Sims = {
       <div class="kpis kpis-3">
         <div class="kpi"><div class="l">Último simulado</div><div class="v">${pct(ls)}</div><div class="s">${esc(last.name)}${last.inst ? ` · ${esc(last.inst)}` : ''} · ${D.ddmmyy(last.date)}${last.cut != null ? `<br>corte ${Fmt.dec(last.cut)}%: ${vsCut(last)}` : ''}</div></div>
         <div class="kpi"><div class="l">vs. anterior</div><div class="v ${delta == null ? '' : delta >= 0 ? 'up' : 'down'}">${delta == null ? '—' : `${delta >= 0 ? '+' : ''}${Fmt.dec(delta)} p.p.`}</div><div class="s">${prev ? esc(prev.name) : 'sem anterior'}</div></div>
-        <div class="kpi"><div class="l">Melhor resultado</div><div class="v">${best ? Fmt.pct(best.r) : '—'}</div><div class="s">${best ? esc(best.s.name) : ''}</div></div>
+        ${hasEnem ? `<div class="kpi"><div class="l">Média (0–1000)</div><div class="v">${this.enem(last) != null ? Fmt.dec(this.enem(last)) : '—'}</div><div class="s">último simulado</div></div>` : ''}<div class="kpi"><div class="l">Melhor resultado</div><div class="v">${best ? Fmt.pct(best.r) : '—'}</div><div class="s">${best ? esc(best.s.name) : ''}</div></div>
       </div>
       ${loss.length ? `<h4 class="stats-h">Onde o último simulado perdeu mais pontos</h4>
         <div class="loss-list">${loss.map((x) => `<div class="loss"><span class="tag" style="--c:${Store.subjectColor(x.sid)}">${esc(Store.subjectName(x.sid))}</span>
@@ -150,8 +166,8 @@ const Sims = {
         ${sids.map((sid) => `<tr><td><span class="tag" style="--c:${Store.subjectColor(sid)}">${esc(Store.subjectName(sid))}</span></td>${recent.map((s) => `<td>${cell(s, sid)}</td>`).join('')}</tr>`).join('')}
       </tbody></table></div>
       <h4 class="stats-h">Todos os simulados</h4>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Simulado</th><th>${T.I}</th><th>Data</th><th>Questões</th><th>Acertos</th><th>Nota</th><th>Corte</th><th></th></tr></thead><tbody>
-        ${sims.slice().reverse().map((s) => { const x = tot(s); return `<tr data-id="${s.id}"><td>${esc(s.name)}</td><td>${s.inst ? esc(s.inst) : '<span class="muted">—</span>'}</td><td>${D.ddmmyy(s.date)}</td><td>${x.t}</td><td>${x.c}</td><td>${pct(this.score(s))}</td><td>${vsCut(s)}</td>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Simulado</th><th>${T.I}</th><th>Data</th><th>Questões</th><th>Acertos</th><th>Nota</th>${hasEnem ? '<th title="Média das notas de 0 a 1000">Média (0–1000)</th>' : ''}<th>Corte</th><th></th></tr></thead><tbody>
+        ${sims.slice().reverse().map((s) => { const x = tot(s); return `<tr data-id="${s.id}"><td>${esc(s.name)}</td><td>${s.inst ? esc(s.inst) : '<span class="muted">—</span>'}</td><td>${D.ddmmyy(s.date)}</td><td>${x.t}</td><td>${x.c}</td><td>${pct(this.score(s))}${s.ce ? ' <small class="muted" title="Certo/errado: nota líquida">líq.</small>' : ''}</td>${hasEnem ? `<td>${this.enem(s) != null ? Fmt.dec(this.enem(s)) : '<span class="muted">—</span>'}</td>` : ''}<td>${vsCut(s)}</td>
           <td class="actions"><button class="kebab" data-sim="edit" title="Editar" aria-label="Editar">✎</button><button class="kebab" data-sim="del" title="Excluir" aria-label="Excluir">×</button></td></tr>`; }).join('')}
       </tbody></table></div>`;
     this.drawChart();

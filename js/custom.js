@@ -11,6 +11,7 @@ const ALARMS = { chime: 'Sininho (3 notas)', bell: 'Sino', digital: 'Digital', s
 const HOME_PANELS = {
   today: { label: 'Hoje (resumo do dia)', sel: '#today' },
   exams: { label: 'Provas-alvo e "Atacar primeiro"', sel: '#exams' },
+  college: { label: 'Notas e faltas (faculdade)', sel: '#college' },
   week: { label: 'Metas da semana (ciclo)', sel: '#week' },
   reviews: { label: 'Revisões e flashcards para hoje', sel: '#reviewsToday' },
   tasks: { label: 'Tarefas', sel: '#tasksSec' },

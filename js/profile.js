@@ -30,6 +30,8 @@ const PROFILES = {
     label: 'Residência médica', short: 'residência médica',
     terms: { S: 'Área', s: 'área', SS: 'Áreas', ss: 'áreas', P: 'Tema', p: 'tema', PP: 'Temas', pp: 'temas', I: 'Instituição', i: 'instituição', ii: 'instituições' },
     template: () => RES_TEMPLATE, templateLabel: 'as 5 grandes áreas da residência',
+    templates: [['res', 'Residência: 5 grandes áreas (resumido)', () => RES_TEMPLATE], ['resfull', 'Residência: 5 grandes áreas (detalhado, ~160 temas)', () => RES_DETAILED]],
+    features: [],
     insts: () => INSTITUTIONS,
     ex: { exam: 'ENARE', exams: 'ENARE, USP, SUS-SP…', inst: 'ENARE', sim: 'USP-SP', front: 'Tríade de Beck (tamponamento cardíaco)?', back: 'Hipotensão, turgência jugular e abafamento de bulhas' },
   },
@@ -37,6 +39,9 @@ const PROFILES = {
     label: 'Concursos públicos', short: 'concurso',
     terms: { S: 'Matéria', s: 'matéria', SS: 'Matérias', ss: 'matérias', P: 'Assunto', p: 'assunto', PP: 'Assuntos', pp: 'assuntos', I: 'Banca', i: 'banca', ii: 'bancas' },
     template: () => CONCURSO_TEMPLATE, templateLabel: 'as matérias básicas de concurso',
+    templates: [['cbas', 'Concurso: matérias básicas', () => CONCURSO_TEMPLATE], ['ctrib', 'Concurso: tribunais', () => CONC_TRIBUNAIS], ['cpol', 'Concurso: carreiras policiais', () => CONC_POLICIAL],
+      ['cfis', 'Concurso: área fiscal', () => CONC_FISCAL], ['cban', 'Concurso: bancários', () => CONC_BANCARIO], ['cinss', 'Concurso: INSS', () => CONC_INSS]],
+    features: ['ce'],
     insts: () => ['Cebraspe', 'FGV', 'FCC', 'Vunesp', 'Cesgranrio', 'IBFC', 'Quadrix', 'Instituto AOCP', 'IDECAN', 'Fundatec', 'Consulplan', 'IADES', 'IBADE', 'FUNRIO', 'Instituto Consulplan', 'Selecon', 'Fundação Carlos Chagas'],
     ex: { exam: 'TRT 2ª Região', exams: 'o seu concurso', inst: 'FGV', sim: 'Cebraspe', front: 'Princípios da administração pública (LIMPE)?', back: 'Legalidade, Impessoalidade, Moralidade, Publicidade e Eficiência' },
   },
@@ -44,19 +49,21 @@ const PROFILES = {
     label: 'ENEM e vestibulares', short: 'ENEM e vestibular',
     terms: { S: 'Matéria', s: 'matéria', SS: 'Matérias', ss: 'matérias', P: 'Assunto', p: 'assunto', PP: 'Assuntos', pp: 'assuntos', I: 'Prova', i: 'prova', ii: 'provas' },
     template: () => ENEM_TEMPLATE, templateLabel: 'as áreas do ENEM',
+    templates: [['enem', 'ENEM: 4 áreas + redação', () => ENEM_TEMPLATE], ['fuvest', 'FUVEST (1ª fase)', () => FUVEST_TEMPLATE], ['med', 'Vestibular de Medicina', () => MEDICINA_VEST]],
+    features: ['essay', 'enemScore'],
     insts: () => ['ENEM', 'FUVEST', 'UNICAMP', 'UNESP', 'UERJ', 'UFPR', 'UFRGS', 'UFSC', 'UNIFESP', 'UEL', 'UEM', 'PUC-SP', 'Mackenzie', 'Santa Casa', 'Albert Einstein', 'UFU', 'ITA', 'IME'],
     ex: { exam: 'ENEM', exams: 'ENEM, FUVEST, UNICAMP…', inst: 'ENEM', sim: 'FUVEST', front: 'Fórmula de Bhaskara?', back: 'x = (−b ± √Δ) / 2a, com Δ = b² − 4ac' },
   },
   faculdade: {
     label: 'Faculdade', short: 'faculdade',
-    terms: { S: 'Disciplina', s: 'disciplina', SS: 'Disciplinas', ss: 'disciplinas', P: 'Assunto', p: 'assunto', PP: 'Assuntos', pp: 'assuntos', I: 'Prova', i: 'prova', ii: 'provas' },
-    template: null, insts: () => ['P1', 'P2', 'P3', 'Prova final', 'Lista de exercícios'],
+    terms: { nav: 'Matérias', S: 'Disciplina', s: 'disciplina', SS: 'Disciplinas', ss: 'disciplinas', P: 'Assunto', p: 'assunto', PP: 'Assuntos', pp: 'assuntos', I: 'Prova', i: 'prova', ii: 'provas' },
+    template: null, templates: [], features: ['college'], insts: () => ['P1', 'P2', 'P3', 'Prova final', 'Lista de exercícios'],
     ex: { exam: 'P1 de Cálculo', exams: 'as suas provas', inst: 'P1', sim: 'P2', front: 'Derivada de sen(x)?', back: 'cos(x)' },
   },
   outro: {
     label: 'Outro', short: 'os seus estudos',
     terms: { S: 'Matéria', s: 'matéria', SS: 'Matérias', ss: 'matérias', P: 'Assunto', p: 'assunto', PP: 'Assuntos', pp: 'assuntos', I: 'Prova', i: 'prova', ii: 'provas' },
-    template: null, insts: () => [],
+    template: null, templates: [], features: [], insts: () => [],
     ex: { exam: 'Prova', exams: 'as suas provas', inst: '', sim: '', front: 'Pergunta', back: 'Resposta' },
   },
 };
@@ -83,7 +90,7 @@ const Profile = {
   // Troca os textos marcados no HTML: data-term (texto), data-term-ph (placeholder), data-term-title (título/aria)
   apply() {
     const p = this.get();
-    Object.assign(T, p.terms, { exam: p.ex.exam, exams: p.ex.exams, inst: p.ex.inst, sim: p.ex.sim, front: p.ex.front, back: p.ex.back, short: p.short });
+    Object.assign(T, { nav: p.terms.SS }, p.terms, { exam: p.ex.exam, exams: p.ex.exams, inst: p.ex.inst, sim: p.ex.sim, front: p.ex.front, back: p.ex.back, short: p.short });
     const fill = (tpl) => tpl.replace(/\{(\w+)\}/g, (m, k) => (T[k] ?? m));
     $$('[data-term]').forEach((el) => { el.textContent = fill(el.dataset.term); });
     $$('[data-term-ph]').forEach((el) => { el.placeholder = fill(el.dataset.termPh); });
@@ -92,12 +99,30 @@ const Profile = {
     // sugestões de bancas/instituições do perfil
     Plan.refreshInst?.();
     // modelo pronto (só nos perfis que têm)
-    const tb = $('#btnTemplate');
-    if (tb) tb.hidden = !p.template;
-    if (document.body) document.body.dataset.profile = this.key();
+    const tb = $('#tplPick');
+    if (tb) tb.hidden = !this.variants().length;
+    if (document.body) {
+      document.body.dataset.profile = this.key();
+      ['ce', 'essay', 'enemScore', 'college'].forEach((f) => document.body.classList.toggle('f-' + f, this.has(f)));
+    }
   },
 
   template() { const t = this.get().template; return t ? t() : null; },
+
+  // perfis a mais ("também estudo para…"): somam funções, modelos e sugestões; os nomes vêm do principal
+  extras() { const k = this.key(); return (Store.data.settings.profileExtra || []).filter((x) => PROFILES[x] && x !== k); },
+  all() { return [this.key(), ...this.extras()]; },
+  has(f) { return this.all().some((k) => (PROFILES[k].features || []).includes(f)); },
+  // modelos prontos disponíveis (do perfil principal primeiro)
+  variants() { return this.all().flatMap((k) => PROFILES[k].templates || []); },
+  variant(id) { const v = this.variants().find((x) => x[0] === id); return v ? v[2]() : null; },
+  instsAll() { return [...new Set(this.all().flatMap((k) => PROFILES[k].insts()))]; },
+
+  renderExtras() {
+    const k = this.key(), ex = Store.data.settings.profileExtra || [];
+    $('#profExtra').innerHTML = Object.entries(PROFILES).filter(([key]) => key !== k && key !== 'outro')
+      .map(([key, p]) => `<label class="switch"><input type="checkbox" data-extra="${key}"${ex.includes(key) ? ' checked' : ''}> ${p.label}</label>`).join('');
+  },
 
   renderSelect() {
     const k = Store.data.settings.profile || '';
