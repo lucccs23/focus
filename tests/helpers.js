@@ -16,6 +16,13 @@ async function waitFor(fn, what, timeout = 30000) {
   }
 }
 
+// Falha em vez de esperar para sempre por algo que deveria responder logo.
+function deadline(promise, what, timeout = 15000) {
+  let t;
+  const expired = new Promise((_, reject) => { t = setTimeout(() => reject(new Error(`sem resposta: ${what}`)), timeout); });
+  return Promise.race([promise, expired]).finally(() => clearTimeout(t));
+}
+
 function createReport() {
   const results = [];
   return {
@@ -48,4 +55,4 @@ const appReady = (w) => waitFor(
   'o app terminar de abrir',
 );
 
-module.exports = { waitFor, createReport, watchdog, appReady };
+module.exports = { waitFor, deadline, createReport, watchdog, appReady };

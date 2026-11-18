@@ -320,7 +320,7 @@ ipcMain.on('attention', () => { if (main && !main.isFocused()) main.flashFrame(t
 // A senha é a mesma do serviço local do leitor (%LOCALAPPDATA%\LeitorDeEstudos\backup-token.txt).
 const http = require('http');
 const { spawn } = require('child_process');
-const BRIDGE_PORT = 47615;
+const BRIDGE_PORT = +process.env.FOCUS_BRIDGE_PORT || 47615; // a variável só é usada pelos testes
 const leitorToken = () => {
   try { return fs.readFileSync(path.join(process.env.LOCALAPPDATA || '', 'LeitorDeEstudos', 'backup-token.txt'), 'utf8').trim(); } catch { return ''; }
 };

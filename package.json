@@ -15,7 +15,8 @@
     "test:desktop": "node scripts/electron.js tests/desktop.js",
     "lint": "eslint . && node tests/audit.js",
     "build": "electron-builder --win --dir",
-    "check": "node scripts/check.js"
+    "check": "node scripts/check.js",
+    "verify": "node scripts/electron.js tests/e2e.js"
   },
   "build": {
     "appId": "com.focus.app",
