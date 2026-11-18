@@ -25,3 +25,26 @@ const hook = settings.hooks.PreToolUse.find((h) => h.matcher.includes('Bash') &&
 assert.ok(hook.hooks.some((h) => h.command.includes('scripts/pr-gate.js')), 'hook ligado nas configurações');
 
 console.log('✓ travas do fluxo de trabalho');
+
+// Fluxos do GitHub: nada de código de PR com permissão do repositório, cache ou action sem versão fixa.
+const wf = (f) => fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', f), 'utf8');
+const verificar = wf('verificar.yml'), guarda = wf('guarda.yml');
+for (const [name, text] of [['verificar', verificar], ['guarda', guarda]]) {
+  for (const [, ref] of text.matchAll(/^\s*(?:-\s*)?uses:\s*(\S+)/gm)) assert.match(ref, /@[0-9a-f]{40}$/, `${name}: action sem SHA fixo: ${ref}`);
+  assert.doesNotMatch(text, /actions\/cache|^\s*cache:/m, `${name}: não pode usar cache`);
+  assert.doesNotMatch(text, /secrets\./, `${name}: não pode usar segredos`);
+  assert.doesNotMatch(text, /^\s*run:.*\$\{\{/m, `${name}: dados do evento só por variável de ambiente`);
+}
+assert.match(verificar, /^on:\s*\n\s+pull_request:\s*$/m, 'verificar roda só em pull_request');
+assert.match(verificar, /^permissions:\s*\n\s+contents: read\s*$/m, 'verificar só lê');
+assert.match(verificar, /persist-credentials: false/, 'checkout sem guardar credenciais');
+assert.match(verificar, /package-manager-cache: false/, 'setup-node sem cache');
+assert.match(guarda, /^\s+pull_request_target:/m, 'guarda usa a versão do branch padrão');
+assert.match(guarda, /^permissions: \{\}/m, 'guarda começa sem permissões');
+assert.doesNotMatch(guarda, /actions\/checkout|\buses:/, 'guarda não baixa o código do PR');
+const ruleset = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '.github', 'ruleset-main.json'), 'utf8'));
+assert.deepStrictEqual(ruleset.bypass_actors, [], 'ruleset sem exceções');
+const required = ruleset.rules.find((r) => r.type === 'required_status_checks').parameters.required_status_checks.map((c) => c.context);
+assert.deepStrictEqual(required.sort(), ['guarda', 'verificar'], 'ruleset exige os dois checks');
+
+console.log('✓ fluxos do GitHub');

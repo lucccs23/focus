@@ -1,0 +1,96 @@
+# Impede que um PR mude as próprias checagens sem a aprovação do dono do repositório.
+# Roda a versão deste arquivo que está no branch padrão. NUNCA baixa nem executa código do PR:
+# só consulta dados pela API. Cada novo commit gera outra execução e exige nova aprovação.
+name: Guarda
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  detectar:
+    name: detectar
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      protegido: ${{ steps.arquivos.outputs.protegido }}
+    steps:
+      - id: arquivos
+        name: Procurar mudanças nas checagens
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          TOTAL: ${{ github.event.pull_request.changed_files }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          lista=$(mktemp)
+          gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" --jq '.[] | .filename, (.previous_filename // empty)' > "$lista"
+          vistos=$(gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" --jq '.[].filename' | wc -l)
+          if [ "$vistos" -ne "$TOTAL" ]; then
+            echo "A API listou $vistos de $TOTAL arquivos; sem a lista completa, o PR não passa."
+            exit 1
+          fi
+
+          protegido=false
+          if grep -Eq '^(\.github/|\.claude/|tests/|scripts/|CLAUDE\.md$|REVIEW\.md$|eslint\.config\.js$|package-lock\.json$)' "$lista"; then
+            protegido=true
+          fi
+
+          # package.json: a versão pode mudar; scripts, dependências e empacotamento, não.
+          if grep -qx 'package.json' "$lista"; then
+            campos='{main, scripts, dependencies, devDependencies, optionalDependencies, overrides, build}'
+            ler() { gh api -H 'Accept: application/vnd.github.raw+json' "repos/$REPO/contents/package.json?ref=$1" | jq -S "$campos"; }
+            if [ "$(ler "$BASE_SHA")" != "$(ler "$HEAD_SHA")" ]; then protegido=true; fi
+          fi
+
+          if [ "$protegido" = true ]; then
+            regras=$(gh api "repos/$REPO/environments/alteracao-de-checagens" --jq '[.protection_rules[]? | select(.type == "required_reviewers")] | length')
+            if [ "$regras" -lt 1 ]; then
+              echo "O ambiente alteracao-de-checagens precisa exigir a aprovação de uma pessoa."
+              exit 1
+            fi
+          fi
+          echo "protegido=$protegido" >> "$GITHUB_OUTPUT"
+          echo "Mudança nas checagens: $protegido"
+
+  aprovar:
+    name: aprovar mudança nas checagens
+    needs: detectar
+    if: needs.detectar.outputs.protegido == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: alteracao-de-checagens
+    permissions: {}
+    steps:
+      - run: echo "Aprovado por uma pessoa para este commit."
+
+  guarda:
+    name: guarda
+    needs: [detectar, aprovar]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - env:
+          DETECTAR: ${{ needs.detectar.result }}
+          PROTEGIDO: ${{ needs.detectar.outputs.protegido }}
+          APROVAR: ${{ needs.aprovar.result }}
+        run: |
+          set -eu
+          [ "$DETECTAR" = success ] || { echo "A detecção não terminou bem."; exit 1; }
+          if [ "$PROTEGIDO" = true ] && [ "$APROVAR" != success ]; then
+            echo "Este PR muda as checagens e não foi aprovado."
+            exit 1
+          fi
+          echo "Liberado."
