@@ -10,13 +10,14 @@
     "dist": "electron-builder --win",
     "runtime": "node build/make-runtime.js",
     "shortcuts": "electron build/make-shortcuts.js",
-    "test": "npm run test:web && npm run test:desktop",
+    "test": "npm run test:rules && npm run test:web && npm run test:desktop",
     "test:web": "node scripts/electron.js tests/web.js",
     "test:desktop": "node scripts/electron.js tests/desktop.js",
     "lint": "eslint . && node tests/audit.js",
     "build": "electron-builder --win --dir",
     "check": "node scripts/check.js",
-    "verify": "node scripts/electron.js tests/e2e.js"
+    "verify": "node scripts/electron.js tests/e2e.js",
+    "test:rules": "node tests/rules.js"
   },
   "build": {
     "appId": "com.focus.app",
