@@ -159,8 +159,23 @@ const Subjects = {
     $('#noteSub').textContent = s ? s.name : '';
     $('#noteForm').notes.value = t.notes || '';
     this.noteLinks();
+    this.notePdfs(t);
     $('#noteDlg').showModal();
     $('#noteForm').notes.focus();
+  },
+  // PDFs ligados a este tema pelo Leitor de Estudos (só no app de desktop)
+  notePdfs(t) {
+    const box = $('#notePdfs'), list = Array.isArray(t.pdfs) ? t.pdfs : [];
+    box.hidden = !window.desktop?.bridgeOpen || !list.length;
+    if (box.hidden) { box.innerHTML = ''; return; }
+    box.innerHTML = `<span class="hint">PDFs no Vetra</span>` + list.map((p, i) =>
+      `<button type="button" class="btn sm" data-pdf="${i}" title="Abrir no Vetra, na página ${p.page || 1}">📄 ${esc(String(p.name || 'PDF').replace(/\.pdf$/i, ''))}${p.page > 1 ? ` · p. ${p.page}` : ''}</button>`).join('');
+    box.onclick = (e) => {
+      const b = e.target.closest('[data-pdf]'); if (!b) return;
+      const p = list[+b.dataset.pdf];
+      window.desktop.bridgeOpen({ fp: p.fp, name: p.name, page: p.page });
+      App.toast('Abrindo no Vetra…');
+    };
   },
   // links encontrados na anotação viram botões clicáveis
   noteLinks() {

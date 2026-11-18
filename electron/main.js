@@ -314,6 +314,86 @@ ipcMain.on('theme', (_e, t) => {
 // pisca o ícone na barra de tarefas quando um timer termina e o app não está em foco
 ipcMain.on('attention', () => { if (main && !main.isFocused()) main.flashFrame(true); });
 
+/* ---------- ponte com o Leitor de Estudos ---------- */
+// O leitor de PDFs (outro app desta máquina) conversa com o Focus por aqui, só dentro do computador:
+// mostra/controla o timer, registra o tempo de leitura como sessões e liga PDFs aos temas.
+// A senha é a mesma do serviço local do leitor (%LOCALAPPDATA%\LeitorDeEstudos\backup-token.txt).
+const http = require('http');
+const { spawn } = require('child_process');
+const BRIDGE_PORT = 47615;
+const leitorToken = () => {
+  try { return fs.readFileSync(path.join(process.env.LOCALAPPDATA || '', 'LeitorDeEstudos', 'backup-token.txt'), 'utf8').trim(); } catch { return ''; }
+};
+let bridgeData = { subjects: [] };
+let leitorSeen = 0;
+const openQueue = []; // PDFs que o Focus pediu para o leitor abrir
+const acks = new Map();
+ipcMain.on('bridge-data', (_e, d) => { if (d && Array.isArray(d.subjects)) bridgeData = d; });
+ipcMain.on('bridge-ack', (_e, r) => { const f = r && acks.get(r.id); if (f) { acks.delete(r.id); f(r); } });
+ipcMain.on('bridge-open', (_e, req) => {
+  if (!req || (!req.fp && !req.name)) return;
+  openQueue.push({ fp: String(req.fp || ''), name: String(req.name || ''), page: Math.max(1, +req.page || 1) });
+  if (openQueue.length > 5) openQueue.shift();
+  // leitor fechado: abre pelo lançador dele (a fila é entregue quando ele se conectar)
+  if (Date.now() - leitorSeen > 9000) {
+    const dir = readCfg().leitorDir;
+    const vbs = dir && path.join(dir, 'iniciar.vbs');
+    if (vbs && fs.existsSync(vbs)) spawn('wscript.exe', [vbs], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  }
+});
+ipcMain.handle('bridge-status', () => ({ connected: Date.now() - leitorSeen < 9000, hasToken: !!leitorToken() }));
+function askRenderer(type, data) {
+  return new Promise((resolve) => {
+    if (!main) return resolve({ ok: false, error: 'janela do Focus fechada' });
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    acks.set(id, resolve);
+    main.webContents.send('bridge', { id, type, data });
+    setTimeout(() => { if (acks.delete(id)) resolve({ ok: false, error: 'o Focus não respondeu' }); }, 4000);
+  });
+}
+function startBridge() {
+  const srv = http.createServer((req, res) => {
+    const head = {
+      'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Private-Network': 'true', 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store',
+    };
+    const reply = (code, obj) => { res.writeHead(code, head); res.end(JSON.stringify(obj)); };
+    if (req.method === 'OPTIONS') { res.writeHead(204, head); return res.end(); }
+    let u;
+    try { u = new URL(req.url, 'http://127.0.0.1'); } catch { return reply(400, { ok: false }); }
+    const tok = leitorToken();
+    if (!tok || u.searchParams.get('t') !== tok) return reply(403, { ok: false, error: 'senha' });
+    leitorSeen = Date.now();
+    // pasta do leitor (para abri-lo quando um tema pedir um PDF)
+    const home = u.searchParams.get('home');
+    if (home && /^[A-Za-z]:[\\/]/.test(home) && readCfg().leitorDir !== home && fs.existsSync(path.join(home, 'iniciar.vbs'))) writeCfg({ leitorDir: home });
+    let body = '';
+    req.on('data', (c) => { body += c; if (body.length > 1e6) req.destroy(); });
+    req.on('end', async () => {
+      try {
+        if (u.pathname === '/status') {
+          return reply(200, { ok: true, app: 'focus', version: app.getVersion(), state: lastState, subjects: bridgeData.subjects, modes: bridgeData.modes || [], open: openQueue.splice(0) });
+        }
+        if (u.pathname === '/command') {
+          const c = body.trim();
+          if (c === 'show') showMain();
+          else if (c === 'mini') toggleMini();
+          else if (['toggle', 'skip', 'stop'].includes(c) || /^mode:[\w:-]{1,80}$/.test(c)) send(c);
+          else return reply(400, { ok: false, error: 'comando desconhecido' });
+          return reply(200, { ok: true });
+        }
+        if (u.pathname === '/session' || u.pathname === '/link') {
+          const r = await askRenderer(u.pathname.slice(1), JSON.parse(body || '{}'));
+          return reply(r.ok ? 200 : 500, r);
+        }
+        reply(404, { ok: false });
+      } catch (e) { reply(500, { ok: false, error: e.message }); }
+    });
+  });
+  srv.on('error', (e) => console.warn('ponte com o leitor:', e.message));
+  srv.listen(BRIDGE_PORT, '127.0.0.1');
+}
+
 /* ---------- ciclo de vida ---------- */
 app.on('second-instance', showMain);
 app.whenReady().then(() => {
@@ -321,6 +401,7 @@ app.whenReady().then(() => {
   createMain();
   createTray();
   registerShortcuts();
+  startBridge();
 });
 app.on('before-quit', () => { quitting = true; });
 app.on('will-quit', () => globalShortcut.unregisterAll());
