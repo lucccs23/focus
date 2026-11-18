@@ -9,12 +9,12 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { waitFor, createReport, watchdog, appReady } = require('./helpers');
 
 const ROOT = path.join(__dirname, '..');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json', '.json': 'application/json' };
-const results = [];
-const check = (name, ok, extra = '') => results.push({ name, ok: !!ok, extra });
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const report = createReport();
+const { check } = report;
 app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'focus-web-')));
 
 // servidor local só com os arquivos do app
@@ -30,7 +30,7 @@ const server = http.createServer((req, res) => {
 // varredura que roda dentro da página
 const SWEEP = `(async () => {
   const errs = []; const onErr = (e) => errs.push(e.message); window.addEventListener('error', onErr);
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const issues = [];
+  const issues = [];
   const chk = (label) => { if (document.documentElement.scrollWidth > innerWidth + 1) issues.push(label + ': página rola de lado'); const dlg = document.querySelector('dialog[open]'); if (dlg) { const r = dlg.getBoundingClientRect(); if (r.right > innerWidth + 1 || r.left < -1) issues.push(label + ': janela sai da tela'); if (dlg.scrollWidth > dlg.clientWidth + 2) issues.push(label + ': conteúdo mais largo que a janela'); } };
   for (const prof of ['residencia', 'concurso', 'vestibular', 'faculdade', 'outro']) {
     localStorage.removeItem('focolab.v1'); Store.load(); Timer.init(); $$('dialog[open]').forEach((d) => d.close());
@@ -40,14 +40,14 @@ const SWEEP = `(async () => {
     Store.data.settings.exams = [{ id: 'e', name: 'Prova', date: D.addDays(Date.now(), 50) }];
     Store.data.tasks.filter((x) => x.demo).slice(-3).forEach((x) => { x.archived = false; x.done = false; });
     Store.data.activeTaskId = Store.data.tasks.find((x) => !x.archived && x.type === 'questoes')?.id || null;
-    App.renderAll(); await wait(60); chk(prof + '/início');
+    App.renderAll(); chk(prof + '/início');
     const opens = { Histórico: () => History.open(Date.now()), Matérias: () => Subjects.open(), Erros: () => Reviews.open(), Cards: () => Cards.open(), CardsLista: () => Cards.open('list'), CardsImportar: () => Cards.open('import'),
       Simulados: () => Sims.open(), SimuladoNovo: () => { Sims.open(); Sims.openForm(null); $('#simForm').ce.checked = true; $('#simForm').ce.onchange?.(); }, Estatísticas: () => Stats.open(), Ajustes: () => Settings.open(),
       Tarefa: () => App.openTask(), Questões: () => App.openQ({}), Relatório: () => Report.open(), ColarQuestões: () => Importer.open(), ColarEdital: () => Edital.open(), TelaInicial: () => Custom.openHome(),
       Guia: () => $('#guideDlg').showModal(), Atalhos: () => $('#keysDlg').showModal(), Redações: () => { Essay.open(); Essay.openForm(null); }, Anotação: () => Subjects.openNote(Store.activeSubjects()[0]?.topics[0]?.id),
       Tempo: () => History.openSess(null), BoasVindas: () => { Custom.renderWelcome(); $('#welcomeDlg').showModal(); }, Sobre: () => About.open() };
-    for (const [name, fn] of Object.entries(opens)) { try { fn(); } catch (e) { issues.push(prof + '/' + name + ': ERRO ' + e.message); } await wait(30); chk(prof + '/' + name); $$('dialog[open]').forEach((d) => d.close()); }
-    Custom.zen(true); await wait(30); chk(prof + '/modo foco'); Custom.zen(false);
+    for (const [name, fn] of Object.entries(opens)) { try { fn(); } catch (e) { issues.push(prof + '/' + name + ': ERRO ' + e.message); } chk(prof + '/' + name); $$('dialog[open]').forEach((d) => d.close()); }
+    Custom.zen(true); chk(prof + '/modo foco'); Custom.zen(false);
   }
   window.removeEventListener('error', onErr); localStorage.removeItem('focolab.v1');
   return { issues, errs };
@@ -72,6 +72,8 @@ const UNITS = `(() => {
   return r;
 })()`;
 
+watchdog(app, 240000, report);
+
 app.whenReady().then(async () => {
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const url = `http://127.0.0.1:${server.address().port}/`;
@@ -79,27 +81,33 @@ app.whenReady().then(async () => {
   const js = (c) => w.webContents.executeJavaScript(c);
   try {
     await w.loadURL(url);
-    await wait(2500);
-    for (const [label, wd, ht] of [['PC', 1440, 900], ['tablet', 820, 1100], ['celular', 375, 812]]) {
-      w.setContentSize(wd, ht);
-      await wait(400);
+    await appReady(w);
+    // emulação de dispositivo: o Windows não deixa uma janela comum ficar com largura de celular
+    w.webContents.debugger.attach('1.3');
+    const cdp = (m, p) => w.webContents.debugger.sendCommand(m, p);
+    for (const [label, wd, ht, mobile] of [['PC', 1440, 900, false], ['tablet', 820, 1100, true], ['celular', 375, 812, true]]) {
+      await cdp('Emulation.setDeviceMetricsOverride', { width: wd, height: ht, deviceScaleFactor: 1, mobile });
+      await cdp('Emulation.setTouchEmulationEnabled', { enabled: mobile });
+      await waitFor(async () => (await js('innerWidth')) === wd, `a tela ficar com ${wd}px`);
       const r = await js(SWEEP);
       check(`telas sem erros nem vazamentos (${label})`, !r.issues.length && !r.errs.length, [...r.issues, ...r.errs].slice(0, 5).join(' | '));
     }
     const u = await js(UNITS);
     for (const [k, v] of Object.entries(u)) check(`cálculo: ${k}`, v);
-    check('service worker ativo', await js('navigator.serviceWorker.getRegistration().then((r) => !!(r && r.active))'));
-    const cached = await js('caches.keys().then(async (k) => k.length ? (await (await caches.open(k[0])).keys()).length : 0)');
-    check('arquivos guardados para uso offline', cached > 20, `${cached} arquivos`);
-    await w.webContents.session.enableNetworkEmulation({ offline: true });
-    await w.reload();
-    await wait(2500);
-    check('abre sem internet', (await js('document.getElementById("time")?.textContent || ""')).includes(':'));
-  } catch (e) { check('execução', false, e.stack); }
 
-  let fail = 0;
-  for (const r of results) { if (!r.ok) fail++; console.log(`${r.ok ? '✓' : '✗'} ${r.name}${r.extra ? ` (${r.extra})` : ''}`); }
-  console.log(fail ? `\n${fail} falha(s)` : '\nTudo certo na versão web.');
-  server.close();
-  app.exit(fail ? 1 : 0);
+    // offline de verdade: espera o app ficar guardado, desliga o servidor e abre de novo
+    const swFiles = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/const FILES = \[([\s\S]*?)\];/)[1];
+    const expected = [...swFiles.matchAll(/'[^']+'/g)].length;
+    await waitFor(() => js('navigator.serviceWorker.getRegistration().then((r) => !!(r && r.active) && !!navigator.serviceWorker.controller)'), 'o service worker assumir a página');
+    const cached = await waitFor(async () => {
+      const n = await js('caches.keys().then(async (k) => k.length ? (await (await caches.open(k[0])).keys()).length : 0)');
+      return n >= expected && n;
+    }, `${expected} arquivos no cache`);
+    check('arquivos guardados para uso offline', true, `${cached} arquivos`);
+    server.closeAllConnections();
+    await new Promise((r) => server.close(r));
+    await w.loadURL(url);
+    check('abre sem internet', (await waitFor(() => js('document.getElementById("time")?.textContent'), 'o timer aparecer')).includes(':'));
+  } catch (e) { check('execução', false, e.stack); }
+  app.exit(report.finish('Tudo certo na versão web.'));
 });

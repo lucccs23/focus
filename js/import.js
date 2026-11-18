@@ -31,7 +31,7 @@ const Importer = {
 
   // ---------- leitura do texto ----------
   split(text) {
-    const t = text.replace(/\r\n?/g, '\n').replace(/ /g, ' ').trim();
+    const t = text.replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ').trim();
     if (!t) return [];
     const starts = [
       /^\s*quest[ãa]o\s*\d+\b/im,           // "Questão 12"
@@ -61,26 +61,26 @@ const Importer = {
     const id = block.match(/\bQ\d{4,}\b/);
     if (id) meta.id = id[0];
     // banca termina antes do próximo rótulo da mesma linha (Órgão:, Prova:, Ano:…)
-    const banca = block.match(/banca\s*[:\-]\s*(.+?)(?=\s+(?:[óo]rg[ãa]o|prova|ano|disciplina|cargo|n[íi]vel|modalidade)\s*[:\-]|\s*\||\n|$)/i);
+    const banca = block.match(/banca\s*[:-]\s*(.+?)(?=\s+(?:[óo]rg[ãa]o|prova|ano|disciplina|cargo|n[íi]vel|modalidade)\s*[:-]|\s*\||\n|$)/i);
     if (banca) meta.banca = banca[1].trim().slice(0, 60);
     // instituição/banca: rótulo "Instituição:/Prova:" ou um nome conhecido (do perfil de estudo) no texto
-    const lab = block.match(/(?:institui[çc][ãa]o|prova|concurso)\s*[:\-]\s*(.+?)(?=\s+(?:ano|banca|[óo]rg[ãa]o|disciplina|cargo)\s*[:\-]|\s*\||\n|$)/i);
+    const lab = block.match(/(?:institui[çc][ãa]o|prova|concurso)\s*[:-]\s*(.+?)(?=\s+(?:ano|banca|[óo]rg[ãa]o|disciplina|cargo)\s*[:-]|\s*\||\n|$)/i);
     const known = Profile.instsAll().find((n) => new RegExp(`(^|[^\\wÀ-ú])${n.replace(/[-]/g, '[-\\s]?')}(?![\\wÀ-ú])`, 'i').test(block));
     if (known) meta.inst = known;
     else if (lab) meta.inst = lab[1].trim().slice(0, 40);
     else if (meta.banca) meta.inst = meta.banca;
-    const ano = block.match(/\bano\s*[:\-]\s*((?:19|20)\d{2})/i) || block.match(/\b((?:19|20)\d{2})\b/);
+    const ano = block.match(/\bano\s*[:-]\s*((?:19|20)\d{2})/i) || block.match(/\b((?:19|20)\d{2})\b/);
     if (ano) meta.ano = ano[1];
-    const gab = block.match(/(?:gabarito|resposta(?:\s+correta)?|alternativa\s+correta)\s*[:\-]?\s*(?:letra\s*)?([A-E](?![a-z])|certo|errado|c(?=\b)|e(?=\b))/i);
+    const gab = block.match(/(?:gabarito|resposta(?:\s+correta)?|alternativa\s+correta)\s*[:-]?\s*(?:letra\s*)?([A-E](?![a-z])|certo|errado|c(?=\b)|e(?=\b))/i);
     if (gab) {
       const g = gab[1].toUpperCase();
       meta.gabarito = g === 'CERTO' || g === 'ERRADO' ? g[0] + g.slice(1).toLowerCase() : g;
     }
     // enunciado: primeira linha "de verdade" (pula cabeçalhos tipo Ano:, Banca:, Órgão:, Prova:, número)
-    const skip = /^(q\d+|quest[ãa]o\s*\d+|\d{1,3}\s*[.)\-–]?$|#?\d{5,}|ano\s*[:\-]|banca\s*[:\-]|[óo]rg[ãa]o\s*[:\-]|prova\s*[:\-]|disciplina\s*[:\-]|assunto\s*[:\-]|gabarito|resposta|n[íi]vel)/i;
+    const skip = /^(q\d+|quest[ãa]o\s*\d+|\d{1,3}\s*[.)\-–]?$|#?\d{5,}|ano\s*[:-]|banca\s*[:-]|[óo]rg[ãa]o\s*[:-]|prova\s*[:-]|disciplina\s*[:-]|assunto\s*[:-]|gabarito|resposta|n[íi]vel)/i;
     const body = lines.filter((l) => !skip.test(l)).map((l) => l.replace(/^\s*(quest[ãa]o\s*\d+|\d{1,3}\s*[.)\-–])\s*/i, ''));
     // pula "Matéria > Assunto" (trilha do site) e alternativas "A) …"
-    const isStmt = (l) => l.length > 25 && !/\s>\s/.test(l) && !/^[A-Ea-e]\s*[).\-]\s/.test(l);
+    const isStmt = (l) => l.length > 25 && !/\s>\s/.test(l) && !/^[A-Ea-e]\s*[).-]\s/.test(l);
     const stmt = (body.find(isStmt) || body.find((l) => l.length > 25) || body[0] || lines[0] || '').replace(/\s+/g, ' ');
     return { text: block.slice(0, 4000), meta, summary: stmt.length > 170 ? stmt.slice(0, 167) + '…' : stmt };
   },

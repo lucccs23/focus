@@ -52,7 +52,7 @@ const Account = {
       this.saveSession(r, a.email);
       return r.access_token;
     } catch (e) {
-      throw new Error('sessão expirada — entre com o seu e-mail de novo');
+      throw new Error('sessão expirada — entre com o seu e-mail de novo', { cause: e });
     }
   },
 
