@@ -411,3 +411,8 @@ body:not(.f-ce) .ce-only, body:not(.f-essay) .essay-only, body:not(.f-college) .
 #emailBox[hidden], #emailIn[hidden], #emailOn[hidden], #emailCodeRow[hidden] { display: none; }
 #emailAddr, #emailCode { flex: 1 1 200px; width: auto; }
 #ghBox summary { cursor: pointer; font-size: 13px; color: var(--c-focus); margin: 12px 0 8px; }
+
+/* PDFs ligados pelo Leitor de Estudos */
+.note-pdfs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px; }
+.note-pdfs .hint { width: 100%; margin: 0; }
+.note-pdfs .btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

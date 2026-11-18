@@ -21,4 +21,10 @@ contextBridge.exposeInMainWorld('desktop', {
   onCommand: (fn) => ipcRenderer.on('command', (_e, c) => fn(c)),
   onState: (fn) => ipcRenderer.on('state', (_e, s) => fn(s)),
   onMiniState: (fn) => ipcRenderer.on('mini-state', (_e, v) => fn(v)),
+  // ponte com o Leitor de Estudos
+  bridgeData: (d) => ipcRenderer.send('bridge-data', d),
+  bridgeAck: (r) => ipcRenderer.send('bridge-ack', r),
+  bridgeOpen: (req) => ipcRenderer.send('bridge-open', req),
+  bridgeStatus: () => ipcRenderer.invoke('bridge-status'),
+  onBridge: (fn) => ipcRenderer.on('bridge', (_e, m) => fn(m)),
 });

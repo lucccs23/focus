@@ -152,6 +152,48 @@ const App = {
       if (!qWasOpen && $('#qDlg').open) dk.command('show'); // abriu o pedido de registro de questões
     });
     dk.setPrefs?.({ closeToTray: !!Store.data.settings.closeToTray });
+    // Leitor de Estudos: sessões de leitura e PDFs ligados aos temas
+    dk.onBridge?.((m) => {
+      let r;
+      try { r = m.type === 'session' ? this.bridgeSession(m.data) : m.type === 'link' ? this.bridgeLink(m.data) : { ok: false, error: 'tipo desconhecido' }; }
+      catch (e) { r = { ok: false, error: e.message }; }
+      dk.bridgeAck({ id: m.id, ...r });
+    });
+  },
+
+  // sessão de leitura vinda do leitor: o mesmo id é atualizado enquanto a leitura continua
+  bridgeSession(x) {
+    const ms = Math.round(+x.ms || 0), start = +x.start || 0;
+    if (!x.id || !(ms >= 60000) || ms > 16 * 3600000 || !(start > 1.5e12)) return { ok: false, error: 'sessão inválida' };
+    const subj = Store.subject(x.subjectId);
+    const topicId = subj && subj.topics.some((t) => t.id === x.topicId) ? x.topicId : null;
+    const title = String(x.title || '').slice(0, 120);
+    const d = Store.data;
+    let s = d.sessions.find((y) => y.leitorId === x.id);
+    if (!s) { s = { id: uid(), mode: 'manual', manual: true, completed: false, taskId: null, taskType: 'estudo', source: 'leitor', leitorId: String(x.id) }; d.sessions.push(s); }
+    Object.assign(s, { start, end: start + ms, ms, subjectId: subj ? subj.id : null, topicId, title });
+    Store.save(); this.renderAll();
+    return { ok: true };
+  },
+  // PDF do leitor ligado a um tema: aparece nas anotações do tema, com botão para abrir
+  bridgeLink(x) {
+    const fp = String(x.fp || ''), name = String(x.name || '').slice(0, 160);
+    if (!fp) return { ok: false, error: 'PDF inválido' };
+    Store.data.subjects.forEach((s) => s.topics.forEach((t) => { if (Array.isArray(t.pdfs)) t.pdfs = t.pdfs.filter((p) => p.fp !== fp); }));
+    const t = Store.topic(x.topicId);
+    if (t) { t.pdfs = Array.isArray(t.pdfs) ? t.pdfs : []; t.pdfs.push({ fp, name, page: Math.max(1, +x.page || 1) }); }
+    Store.save(); if (Subjects.isOpen()) Subjects.render();
+    return { ok: true, linked: !!t };
+  },
+  // lista de matérias/temas para o leitor escolher onde registrar a leitura
+  sendBridgeData() {
+    const dk = window.desktop;
+    if (!dk?.bridgeData) return;
+    const subjects = Store.activeSubjects().map((s) => ({ id: s.id, name: s.name, color: Store.subjectColor(s.id), topics: s.topics.map((t) => ({ id: t.id, name: t.name })) }));
+    const key = JSON.stringify(subjects);
+    if (key === this._lastBridge) return;
+    this._lastBridge = key;
+    dk.bridgeData({ subjects, labels: { s: T.s, p: T.p } });
   },
 
   // abas do timer: as fixas + os timers personalizados
@@ -175,6 +217,7 @@ const App = {
       running: Timer.running, started: Timer.isStarted(),
       progress: def.countdown && Timer.isStarted() ? +(1 - Timer.progress()).toFixed(3) : -1,
       task: def.focus ? Store.activeTask()?.title || '' : '',
+      focus: !!def.focus,
     };
     const key = JSON.stringify(s);
     if (key === this._lastDesktop) return;
@@ -272,6 +315,7 @@ const App = {
   /* ---------- renderização ---------- */
   renderAll() {
     this.renderTimer();
+    this.sendBridgeData();
     this.renderTasks();
     this.renderToday();
     Week.render();
