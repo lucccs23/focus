@@ -53,7 +53,7 @@ const History = {
 
     const focus = sum(ss, (s) => s.ms);
     const qt = sum(qs, (q) => q.total), qc = sum(qs, (q) => q.correct);
-    const kind = (s) => (s.source === 'leitor' ? 'Leitura (Leitor)' : s.manual ? 'Manual' : s.mode === 'stopwatch' ? 'Cronômetro' : s.completed ? 'Pomodoro' : 'Foco interrompido');
+    const kind = (s) => (s.source === 'leitor' ? 'Leitura (Vetra)' : s.manual ? 'Manual' : s.mode === 'stopwatch' ? 'Cronômetro' : s.completed ? 'Pomodoro' : 'Foco interrompido');
     const btns = (t) => `<button class="kebab" data-act="edit-${t}" title="Editar" aria-label="Editar">✎</button><button class="kebab" data-act="del-${t}" title="Excluir" aria-label="Excluir">×</button>`;
 
     const rows = [
