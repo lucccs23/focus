@@ -35,7 +35,7 @@ const Edital = {
   },
 
   clean(s) {
-    let t = s.replace(/\s+/g, ' ').trim().replace(/^[\-–•·]\s*/, '').replace(/[.;,:]+$/, '').trim();
+    let t = s.replace(/\s+/g, ' ').trim().replace(/^[-–•·]\s*/, '').replace(/[.;,:]+$/, '').trim();
     if (t.length > 110) t = t.slice(0, 108).replace(/\s+\S*$/, '') + '…';
     return t;
   },
@@ -56,7 +56,7 @@ const Edital = {
   },
 
   parse(text, sub) {
-    const t = text.replace(/\r\n?/g, '\n').replace(/ /g, ' ').trim();
+    const t = text.replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ').trim();
     if (!t) return [];
     // títulos: MAIÚSCULAS seguidas de ":" (no meio do texto ou no início da linha), ou linha toda em maiúsculas
     const heads = [];

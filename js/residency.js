@@ -164,7 +164,7 @@ const Plan = {
       return;
     }
     el.hidden = false;
-    let head = '';
+    let head;
     if (ex) {
       const p = this.pace(ex);
       const others = this.exams().filter((x) => x !== ex && x.date >= D.sod(Date.now())).slice(0, 3);

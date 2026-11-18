@@ -35,7 +35,7 @@ npm run shortcuts
 
 `npm run runtime` cria `runtime/Focus.exe`: o Electron com nome, ícone e versão do Focus (é o que aparece na barra de tarefas). `npm run shortcuts` recria os atalhos "Focus" apontando para ele. Para recompilar o `Focus.exe` (só se mexer em `build/launcher.cs`): `build\make-launcher.cmd`.
 
-**Testes:** `npm test` roda os dois testes automáticos (precisa do `npm install`):
+**Verificação:** `npm run check` roda lint, testes e build, nessa ordem, e para na primeira falha. Separadamente: `npm run lint` (ESLint e auditoria de `tests/audit.js`), `npm run build` (empacota o app sem gerar instalador) e `npm test`, que roda os dois testes automáticos:
 
 - `npm run test:web`: abre todas as telas de todos os perfis em 3 tamanhos (celular, tablet, PC) procurando erros e conteúdo fora da tela, confere os cálculos (nota líquida, notas da faculdade, flashcards, colar edital) e o modo offline;
 - `npm run test:desktop`: abre o app de desktop com dados temporários e confere timer, PDF e sincronização por pasta.
