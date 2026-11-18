@@ -23,3 +23,5 @@ Classifique cada achado como **Importante** (precisa ser corrigido antes do merg
 
 - O comportamento foi verificado de verdade? A descrição diz o que ficou sem verificar?
 - O PR faz só o que diz fazer?
+
+<!-- PR de teste da guarda: não fazer merge. -->
