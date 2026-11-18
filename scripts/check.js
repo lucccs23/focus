@@ -1,10 +1,10 @@
 'use strict';
-// Tudo o que precisa passar antes de abrir um PR: lint, testes e build. Para na primeira falha.
+// Tudo o que precisa passar antes de abrir um PR: lint, testes, teste de ponta a ponta e build. Para na primeira falha.
 const { spawnSync } = require('child_process');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const steps = ['lint', 'test', 'build'];
+const steps = ['lint', 'test', 'verify', 'build'];
 
 for (const step of steps) {
   console.log(`\n=== ${step} ===`);
