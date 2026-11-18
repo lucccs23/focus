@@ -149,6 +149,11 @@ const App = {
       if (c === 'toggle') Timer.toggle();
       else if (c === 'skip') this.skip();
       else if (c === 'stop') this.stop();
+      else if (typeof c === 'string' && c.startsWith('mode:')) {
+        // vindo do Leitor de Estudos: troca o modo (salva o que já tinha sido feito) e começa a contar
+        const m = c.slice(5);
+        if (Timer.modeDef(m)) { if (m !== Timer.s.mode) Timer.setMode(m); if (!Timer.running) Timer.toggle(); }
+      }
       if (!qWasOpen && $('#qDlg').open) dk.command('show'); // abriu o pedido de registro de questões
     });
     dk.setPrefs?.({ closeToTray: !!Store.data.settings.closeToTray });
@@ -190,10 +195,16 @@ const App = {
     const dk = window.desktop;
     if (!dk?.bridgeData) return;
     const subjects = Store.activeSubjects().map((s) => ({ id: s.id, name: s.name, color: Store.subjectColor(s.id), topics: s.topics.map((t) => ({ id: t.id, name: t.name })) }));
-    const key = JSON.stringify(subjects);
+    // modos do timer (os fixos + os timers personalizados), com a duração em minutos
+    const min = (m) => Math.round(Timer.durationFor(m) / 60000);
+    const modes = [['pomodoro', 'Pomodoro'], ['short', 'Pausa curta'], ['long', 'Pausa longa'], ['stopwatch', 'Cronômetro'],
+      ...Timer.presets().flatMap((p) => [['p:' + p.id, p.label], ['pb:' + p.id, `Pausa · ${p.label}`]])]
+      .filter(([m]) => Timer.modeDef(m))
+      .map(([id, label]) => ({ id, label, min: id === 'stopwatch' ? 0 : min(id), focus: !!Timer.modeDef(id).focus }));
+    const key = JSON.stringify([subjects, modes]);
     if (key === this._lastBridge) return;
     this._lastBridge = key;
-    dk.bridgeData({ subjects, labels: { s: T.s, p: T.p } });
+    dk.bridgeData({ subjects, modes, labels: { s: T.s, p: T.p } });
   },
 
   // abas do timer: as fixas + os timers personalizados
@@ -217,7 +228,7 @@ const App = {
       running: Timer.running, started: Timer.isStarted(),
       progress: def.countdown && Timer.isStarted() ? +(1 - Timer.progress()).toFixed(3) : -1,
       task: def.focus ? Store.activeTask()?.title || '' : '',
-      focus: !!def.focus,
+      focus: !!def.focus, modeId: Timer.s.mode,
     };
     const key = JSON.stringify(s);
     if (key === this._lastDesktop) return;

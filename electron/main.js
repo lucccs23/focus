@@ -372,13 +372,13 @@ function startBridge() {
     req.on('end', async () => {
       try {
         if (u.pathname === '/status') {
-          return reply(200, { ok: true, app: 'focus', version: app.getVersion(), state: lastState, subjects: bridgeData.subjects, open: openQueue.splice(0) });
+          return reply(200, { ok: true, app: 'focus', version: app.getVersion(), state: lastState, subjects: bridgeData.subjects, modes: bridgeData.modes || [], open: openQueue.splice(0) });
         }
         if (u.pathname === '/command') {
           const c = body.trim();
           if (c === 'show') showMain();
           else if (c === 'mini') toggleMini();
-          else if (['toggle', 'skip', 'stop'].includes(c)) send(c);
+          else if (['toggle', 'skip', 'stop'].includes(c) || /^mode:[\w:-]{1,80}$/.test(c)) send(c);
           else return reply(400, { ok: false, error: 'comando desconhecido' });
           return reply(200, { ok: true });
         }
