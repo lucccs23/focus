@@ -3,4 +3,5 @@ dist/
 *.exe
 .claude/*
 !.claude/skills/
+!.claude/settings.json
 runtime/
